@@ -67,6 +67,32 @@ Single spec per experiment. The spec is given once; the build may use multiple t
 
 ---
 
+## Research Gap — What We Contribute
+
+### What existing research covers
+
+Existing work on spec/prompt quality and AI code generation (PartialOrderEval, REprompt, Midolo et al.) consistently varies one dimension: **how much detail** the prompt contains — more vs. less. The finding is consistent: more specific prompts produce better code.
+
+But these studies test on **algorithm-level tasks** — HumanEval, function-level benchmarks. Not full applications.
+
+And they stop at **"did the code work."** No study measures output across all four application surfaces.
+
+The REST-to-MCP paper (Jul 2025) studies MCP server patterns, but assumes the API already exists. It says nothing about generating an MCP server from a spec.
+
+### What we do differently
+
+1. **Spec type, not just spec volume** — we compare qualitatively different *kinds* of spec (problem statement, PM requirements, user role behaviors, technical PRD), not just more vs. less detail of the same kind.
+
+2. **Full application output** — we measure a complete deliverable: UI, API, MCP server, and skills. No existing study does this.
+
+3. **AI-native surfaces as evaluation targets** — we specifically ask: does spec type affect MCP tool design and skill quality? This is entirely unexplored.
+
+### Closest prior work to build from
+
+The PartialOrderEval paper (arXiv 2508.03678) is the most direct predecessor. Their core finding — that LLM underperformance comes from insufficient specification, not missing model knowledge — is the baseline we extend. We go further: qualitatively different spec types, full application scope, AI-native surfaces included.
+
+---
+
 ## Web Research Findings
 
 ### Spec-Driven Development — Prior Art
