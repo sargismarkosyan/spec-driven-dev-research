@@ -23,6 +23,11 @@ This tool is built for a specific retro format: the **work audit**. It replaces 
 - Doesn't want overhead — submitting activities should be fast
 - Wants to see what colleagues are doing (transparency, not surveillance)
 
+### AI Agent
+- Connects to the app via MCP to read and write session data without a UI
+- Needs tools to: create sessions, add activities, retrieve results grouped by automation potential, and flag priorities
+- Used by team leads who want to run automated summaries or pipe session results into other tools
+
 ## The Flow
 
 1. Lead creates a session and shares the link in the meeting
@@ -42,3 +47,12 @@ This tool is built for a specific retro format: the **work audit**. It replaces 
 - The four-question tagging model is fixed — not configurable — to keep sessions focused
 - The lead has a separate view with aggregation controls; engineers see a simple card board
 - This is a single-session tool — no ongoing project management, no account history
+- The app ships with AI skills: pre-packaged workflows that help the lead summarize results and turn them into actionable backlog items
+
+## Deliverables
+
+The application has four outputs:
+1. **Web UI** — two distinct views (engineer board, lead results)
+2. **REST API** — the backend the UI talks to
+3. **MCP Server** — exposes all session operations as MCP tools for AI agents
+4. **AI Skills** — pre-built workflows for common post-session actions (summarize, prioritize, draft backlog)

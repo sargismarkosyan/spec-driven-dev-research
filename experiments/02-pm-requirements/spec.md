@@ -16,6 +16,8 @@
 - As a team lead, I can see all activities across the team in one view, sorted or filtered by attribute.
 - As a team lead, I can mark certain activities as "automation candidates" and export the list.
 - As a team, we can run this as a live session — everyone submits at the same time and we discuss the results together.
+- As an AI agent, I can connect to the application via MCP to read session data, add activities, and retrieve results programmatically.
+- As a team lead, I can use pre-built AI skills to summarize session results, suggest automation priorities, and generate a backlog draft from the session output.
 
 ## Acceptance Criteria
 
@@ -24,3 +26,5 @@
 - Each activity has: title, time estimate (low / medium / high), enjoyment (like / neutral / dislike), automation potential (yes / maybe / no).
 - The lead view shows a summary grouped by automation potential.
 - Session data persists for at least the duration of the session.
+- The application exposes an MCP server that gives AI agents access to all session operations.
+- The application ships with AI skills covering: summarizing session results and drafting automation recommendations.
