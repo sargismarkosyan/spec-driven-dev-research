@@ -1,37 +1,54 @@
-# Findings: Problem Statement Only
+# Findings: Experiment 01 — Problem Statement
 
-## What Claude Built
+> Scoring criteria: see `shared/evaluation-rubric.md`
 
-_Describe what was generated — app structure, features included, tech choices made._
+---
 
-## Completeness
+## Iterations Log
 
-_Did it cover the core use case? What was missing?_
+| # | Prompt | What was missing / wrong | What it fixed |
+|---|---|---|---|
+| 1 | _(initial prompt)_ | — | Initial generation |
+| | | | |
 
-## Correctness
+**Total prompts to reach final state:** ___
 
-_Did the code run? Any bugs, logical errors?_
+---
 
-## Design Decisions
+## Scores
 
-_What architecture/UX choices did Claude make unprompted? Were they sensible?_
-
-## Surprises
-
-_What did it get right that we didn't ask for? What did it get wrong?_
-
-## Effort to Correct
-
-_How much follow-up prompting was needed to get to a working state?_
-
-## Score (1–5)
-
-| Dimension | Score | Notes |
+| Dimension | Score (1–5) | Notes |
 |---|---|---|
 | Completeness | | |
-| Correctness | | |
-| Design quality | | |
-| Surprise factor | | |
+| Code Correctness | | |
+| Architecture & Design | | |
+| MCP Quality | | |
+| Skills Quality | | |
+| **Total** | | |
+
+---
+
+## Observations
+
+### What Claude built in one shot
+_Describe what was generated: structure, surfaces present, tech choices made._
+
+### What it got right unprompted
+_Features, design decisions, or domain vocabulary that appeared without being asked for._
+
+### What it missed or got wrong
+_Gaps, wrong assumptions, surfaces that needed follow-up._
+
+### MCP surface specifically
+_Tool names, granularity, descriptions — were they domain-appropriate?_
+
+### Skills surface specifically
+_Were the workflows useful? Did they reflect the app's actual use case?_
+
+### Iteration breakdown
+_Which surface required the most follow-up? What kinds of corrections?_
+
+---
 
 ## Key Takeaway
 
