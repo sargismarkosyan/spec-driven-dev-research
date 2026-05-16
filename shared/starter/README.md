@@ -2,39 +2,36 @@
 
 Minimal working foundation for all four spec experiments. Every experiment begins from a copy of this directory.
 
-## What's here
+## Structure
 
-| Package | What it does |
-|---|---|
-| `frontend/` | Next.js app — join screen + shared canvas with real-time presence |
-| `backend/` | Express + Socket.io — multi-user session, in-memory storage |
-| `mcp-server/` | MCP server (HTTP transport) — initialized with one placeholder tool |
-| `skills/` | Empty — ready for skill files |
-
-## Running locally
-
-```bash
-# Terminal 1 — backend
-cd backend && npm install && npm run dev
-
-# Terminal 2 — MCP server
-cd mcp-server && npm install && npm run dev
-
-# Terminal 3 — frontend
-cd frontend && npm install && npm run dev
+```
+src/
+  server.ts     ← single entry point: Express + Socket.io + MCP + Next.js
+  store.ts      ← in-memory storage (extend with domain types)
+  mcp.ts        ← MCP tools (extend with domain tools)
+app/            ← Next.js frontend (App Router)
+lib/
+  socket.ts     ← Socket.io client (same-origin)
+skills/         ← AI skill files (SKILL.md format)
 ```
 
-Frontend: http://localhost:3000  
-Backend: http://localhost:3001  
-MCP server: http://localhost:3002/mcp
+## Running
+
+```bash
+npm install
+npm run dev     # http://localhost:3000
+```
+
+One command. One port. Everything on `localhost:3000`:
+- `/` and `/canvas` → Next.js frontend
+- `/api/*` → REST API
+- `/mcp` → MCP server (streamable HTTP)
 
 ## What to extend
 
-The starter has no domain logic — no sessions, no activities, no tagging. That's what the spec drives. The patterns are in place:
-
-- **Storage:** extend `backend/src/store.ts` with your domain types
-- **WebSocket events:** extend `backend/src/index.ts` with domain events
-- **REST routes:** add routes to `backend/src/index.ts`
-- **MCP tools:** add tools in `mcp-server/src/index.ts`
-- **Skills:** add `SKILL.md` files to `skills/`
-- **Frontend:** extend the Next.js pages with domain UI
+- **Storage:** add domain types to `src/store.ts`
+- **REST routes:** add to `src/server.ts` under REST API section
+- **WebSocket events:** add to `src/server.ts` under Socket.io section
+- **MCP tools:** add to `src/mcp.ts`
+- **Skills:** add `<name>/SKILL.md` files to `skills/`
+- **Frontend:** extend `app/` pages with domain UI

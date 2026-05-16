@@ -24,15 +24,12 @@ export default function CanvasPage() {
       setUsers(s.users);
       setNotes(s.notes);
     });
-
     socket.on('user:joined', (user: User) => {
       setUsers((prev) => [...prev.filter((u) => u.id !== user.id), user]);
     });
-
     socket.on('user:left', (id: string) => {
       setUsers((prev) => prev.filter((u) => u.id !== id));
     });
-
     socket.on('note:added', (note: Note) => {
       setNotes((prev) => [...prev, note]);
     });
@@ -54,7 +51,6 @@ export default function CanvasPage() {
 
   return (
     <div className="min-h-screen flex">
-
       {/* Sidebar — presence */}
       <aside className="w-52 bg-white border-r border-gray-100 p-4 flex flex-col">
         <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">
@@ -72,8 +68,6 @@ export default function CanvasPage() {
 
       {/* Main — shared canvas */}
       <main className="flex-1 p-6 flex flex-col gap-4">
-
-        {/* Add note */}
         <div className="flex gap-2">
           <input
             value={input}
@@ -92,25 +86,18 @@ export default function CanvasPage() {
           </button>
         </div>
 
-        {/* Notes grid */}
         {notes.length === 0 ? (
-          <p className="text-sm text-gray-400 mt-4">
-            No notes yet. Add one above or wait for teammates.
-          </p>
+          <p className="text-sm text-gray-400 mt-4">No notes yet. Add one above or wait for teammates.</p>
         ) : (
           <div className="grid grid-cols-3 gap-3">
             {notes.map((note) => (
-              <div
-                key={note.id}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm p-4"
-              >
+              <div key={note.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                 <p className="text-sm text-gray-800">{note.text}</p>
                 <p className="text-xs text-gray-400 mt-2">{note.authorName}</p>
               </div>
             ))}
           </div>
         )}
-
       </main>
     </div>
   );
