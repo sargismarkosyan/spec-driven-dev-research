@@ -10,11 +10,11 @@ A real-time collaborative web app for running engineering team work-audit sessio
 
 ## Tech Stack
 
-- **Frontend:** React + TypeScript, Tailwind CSS
-- **Backend:** Node.js + Express
-- **Realtime:** WebSockets (Socket.io)
+- **Single Node.js server:** Next.js (custom server) + Express + Socket.io, all running in one process on one port
+- **Frontend:** Next.js App Router, React, TypeScript, Tailwind CSS — served by the same Node.js process
+- **Realtime:** Socket.io attached to the same HTTP server
 - **Storage:** In-memory (sessions expire after 24h); no database required
-- **MCP Server:** Streamable HTTP MCP server on the same process as the REST API
+- **MCP Server:** Streamable HTTP MCP server mounted on the same Express instance at `/mcp`
 - **Deployment target:** Single server / Docker container
 
 ## Data Model
@@ -105,5 +105,5 @@ Ship three skills as `SKILL.md` files (Anthropic Claude Skills format). Skills a
 - Works with 20 concurrent participants
 - Mobile-friendly (engineers may join on phone)
 - No persistent storage — session data lives in memory only
-- Single deployable artifact (frontend served from the same Express server)
+- Single deployable artifact — Next.js and the API run in the same Node.js process
 - MCP server runs on the same process as the REST API

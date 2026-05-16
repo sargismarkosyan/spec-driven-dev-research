@@ -27,4 +27,4 @@
 - The facilitator view shows activities grouped by automation potential, with the ability to flag individual ones.
 - Session data persists for at least the duration of the session.
 - The application exposes an MCP server so a facilitator's AI assistant can query and act on session data programmatically.
-- The application ships with AI skills for: summarizing session results and identifying low-effort high-value automation candidates.
+- The application ships with AI skills for: summarizing session results, identifying low-effort high-value automation candidates, and drafting a backlog from the prioritized output.
