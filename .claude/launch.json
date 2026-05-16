@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["zsh", "-i", "-c", "cd ~/Projects/spec-driven-dev-research/shared/starter/backend && npm run dev"],
+      "port": 3001
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["zsh", "-i", "-c", "cd ~/Projects/spec-driven-dev-research/shared/starter/frontend && npm run dev"],
+      "port": 3000
+    }
+  ]
+}

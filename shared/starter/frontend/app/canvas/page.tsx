@@ -37,7 +37,13 @@ export default function CanvasPage() {
       setNotes((prev) => [...prev, note]);
     });
 
-    return () => { socket.disconnect(); };
+    return () => {
+      socket.off('state');
+      socket.off('user:joined');
+      socket.off('user:left');
+      socket.off('note:added');
+      socket.disconnect();
+    };
   }, [router]);
 
   const addNote = () => {
