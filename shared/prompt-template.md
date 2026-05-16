@@ -7,11 +7,7 @@ The UI guide (`shared/ui-guide.md`) is attached as context when running in Claud
 
 ## Setup (before running)
 
-Copy the starter into the experiment's output directory:
-
-```bash
-cp -r shared/starter/. experiments/<experiment-id>/output/
-```
+Each experiment's `output/` is already pre-seeded with the starter.
 
 Open a fresh Claude Code session with the working directory set to:
 `experiments/<experiment-id>/output/`

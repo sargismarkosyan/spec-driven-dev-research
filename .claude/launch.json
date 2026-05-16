@@ -4,8 +4,32 @@
     {
       "name": "starter",
       "runtimeExecutable": "wsl",
-      "runtimeArgs": ["zsh", "-i", "-c", "cd ~/Projects/spec-driven-dev-research/shared/starter && npm run dev"],
+      "runtimeArgs": ["zsh", "-i", "-c", "cd /home/sargis/Projects/spec-driven-dev-research/shared/starter && npm run dev"],
       "port": 3000
+    },
+    {
+      "name": "experiment-01",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["zsh", "-i", "-c", "cd /home/sargis/Projects/spec-driven-dev-research/experiments/01-problem-statement/output && PORT=3010 npm run dev"],
+      "port": 3010
+    },
+    {
+      "name": "experiment-02",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["zsh", "-i", "-c", "cd /home/sargis/Projects/spec-driven-dev-research/experiments/02-pm-requirements/output && PORT=3020 npm run dev"],
+      "port": 3020
+    },
+    {
+      "name": "experiment-03",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["zsh", "-i", "-c", "cd /home/sargis/Projects/spec-driven-dev-research/experiments/03-user-role-based/output && PORT=3030 npm run dev"],
+      "port": 3030
+    },
+    {
+      "name": "experiment-04",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["zsh", "-i", "-c", "cd /home/sargis/Projects/spec-driven-dev-research/experiments/04-technical-requirements/output && PORT=3040 npm run dev"],
+      "port": 3040
     }
   ]
 }
