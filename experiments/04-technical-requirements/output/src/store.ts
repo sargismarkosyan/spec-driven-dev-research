@@ -1,27 +1,46 @@
-// In-memory store — extend with your domain types
+// In-memory store — Toil Tracker domain types
 
-export type User = {
+export type Session = {
   id: string;
   name: string;
-  joinedAt: Date;
+  createdAt: Date;
+  facilitatorToken: string;
+  participants: Participant[];
+  activities: Activity[];
+  status: 'open' | 'reviewing' | 'closed';
 };
 
-export type Note = {
+export type Participant = {
   id: string;
-  authorId: string;
-  authorName: string;
-  text: string;
-  createdAt: Date;
+  name: string;
+  sessionId: string;
+};
+
+export type Activity = {
+  id: string;
+  participantId: string;
+  title: string;
+  timeEstimate: 'quick' | 'medium' | 'significant';
+  enjoyment: 'yes' | 'meh' | 'no';
+  repetitive: 'yes' | 'sometimes' | 'no';
+  automatable: 'yes' | 'maybe' | 'no';
+  flaggedByFacilitator: boolean;
 };
 
 export type AppState = {
-  users: Map<string, User>;
-  notes: Note[];
+  sessions: Map<string, Session>;
 };
 
 const state: AppState = {
-  users: new Map(),
-  notes: [],
+  sessions: new Map(),
 };
+
+// Expire sessions older than 24 hours
+setInterval(() => {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  for (const [id, session] of state.sessions) {
+    if (session.createdAt < cutoff) state.sessions.delete(id);
+  }
+}, 60 * 60 * 1000);
 
 export default state;

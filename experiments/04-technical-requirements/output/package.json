@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "PORT=3040 tsx watch src/server.ts",
     "build": "next build",
     "start": "node dist/server.js"
   },

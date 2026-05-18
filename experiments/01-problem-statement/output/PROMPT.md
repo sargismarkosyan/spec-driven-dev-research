@@ -2,7 +2,7 @@
 # Paste everything between the triple backticks as your first message in a fresh Claude Code session.
 
 ```
-You are extending an existing application. The codebase in the current directory is a working starter — a minimal multi-user shared-canvas app built with Next.js (custom server), Express, Socket.io, and an MCP server, all running in one Node.js process on port 3000. See CLAUDE.md for the project layout.
+You are extending an existing application. The codebase in the current directory is a working starter — a minimal multi-user shared-canvas app built with Next.js (custom server), Express, Socket.io, and an MCP server, all running in one Node.js process on port 3010. See CLAUDE.md for the project layout.
 
 Your task is to evolve this starter into the Toil Tracker application described in the spec below.
 

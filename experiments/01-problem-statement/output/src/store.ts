@@ -1,27 +1,48 @@
-// In-memory store — extend with your domain types
+// In-memory store — domain types for Toil Tracker
 
-export type User = {
+export type Session = {
   id: string;
   name: string;
-  joinedAt: Date;
+  createdAt: Date;
+  status: 'open' | 'closed';
 };
 
-export type Note = {
+export type Role = 'engineer' | 'facilitator';
+
+export type Participant = {
+  socketId: string;
+  name: string;
+  role: Role;
+  sessionId: string;
+};
+
+export type Frequency = 'daily' | 'weekly' | 'monthly' | 'occasional';
+
+export type Activity = {
   id: string;
+  sessionId: string;
   authorId: string;
   authorName: string;
-  text: string;
+  description: string;
+  category: string;
+  frequency: Frequency;
+  minutesPerOccurrence: number;
+  painLevel: number; // 1–5
+  flagged: boolean;
   createdAt: Date;
 };
 
 export type AppState = {
-  users: Map<string, User>;
-  notes: Note[];
+  sessions: Map<string, Session>;
+  // keyed by socketId
+  participants: Map<string, Participant>;
+  activities: Activity[];
 };
 
 const state: AppState = {
-  users: new Map(),
-  notes: [],
+  sessions: new Map(),
+  participants: new Map(),
+  activities: [],
 };
 
 export default state;

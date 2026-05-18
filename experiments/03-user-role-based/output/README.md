@@ -19,10 +19,10 @@ skills/         ← AI skill files (SKILL.md format)
 
 ```bash
 npm install
-npm run dev     # http://localhost:3000
+npm run dev     # http://localhost:3030
 ```
 
-One command. One port. Everything on `localhost:3000`:
+One command. One port. Everything on `localhost:3030`:
 - `/` and `/canvas` → Next.js frontend
 - `/api/*` → REST API
 - `/mcp` → MCP server (streamable HTTP)
