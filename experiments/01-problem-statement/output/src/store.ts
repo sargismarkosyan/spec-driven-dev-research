@@ -1,22 +1,15 @@
-// In-memory store — domain types for Toil Tracker
-
-export type Session = {
-  id: string;
-  name: string;
-  createdAt: Date;
-  status: 'open' | 'closed';
-};
-
 export type Role = 'engineer' | 'facilitator';
+export type Energy = 'drains' | 'energizes';
+export type Verdict = 'automate' | 'eliminate' | 'handoff' | 'keep';
+export type Phase = 'lobby' | 'input' | 'discussion' | 'closed';
 
 export type Participant = {
-  socketId: string;
+  id: string;
   name: string;
   role: Role;
   sessionId: string;
+  joinedAt: Date;
 };
-
-export type Frequency = 'daily' | 'weekly' | 'monthly' | 'occasional';
 
 export type Activity = {
   id: string;
@@ -24,24 +17,33 @@ export type Activity = {
   authorId: string;
   authorName: string;
   description: string;
-  category: string;
-  frequency: Frequency;
-  minutesPerOccurrence: number;
-  painLevel: number; // 1–5
+  durationMinutes: number;
+  frequencyPerWeek: number;
+  weeklyMinutes: number;
+  energy: Energy;
+  verdict?: Verdict;
   flagged: boolean;
+  mergedFromIds: string[];
+  mergedAuthorNames: string[];
+  createdAt: Date;
+};
+
+export type Session = {
+  id: string;
+  facilitatorId: string;
+  phase: Phase;
   createdAt: Date;
 };
 
 export type AppState = {
-  sessions: Map<string, Session>;
-  // keyed by socketId
   participants: Map<string, Participant>;
+  sessions: Map<string, Session>;
   activities: Activity[];
 };
 
 const state: AppState = {
-  sessions: new Map(),
   participants: new Map(),
+  sessions: new Map(),
   activities: [],
 };
 

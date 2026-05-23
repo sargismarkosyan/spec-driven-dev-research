@@ -72,3 +72,41 @@ The more prescriptive the spec, the more coherent the output — but coherence w
 | More spec = better output | Partially true — more spec produces better agent surfaces (MCP, Skills) but not necessarily better UI |
 | Problem statement alone is insufficient | Partially false — Exp 01 produced a more complete MCP than Exp 02 and Exp 03; the problem statement prompted agent thinking that PM stories did not |
 | User role spec beats PM requirements | Partially true for UI and skills quality; false for MCP completeness — both Exp 02 and 03 missed engineer-side MCP tools |
+
+---
+
+## After v2 Specs — New Findings
+
+### 6. Naming operations in acceptance criteria is the MCP unlock
+
+Exp 02 went from MCP score 2 (v1) to MCP score 4 (v2). The only meaningful change to the spec was adding one acceptance criterion: *"The application exposes an MCP server so an AI assistant can create sessions, join as a participant, add activities, classify activities, flag items…"* — a single sentence naming the operations.
+
+The spec didn't need to be technical. It didn't need signatures, types, or return values. It just needed to enumerate the verbs. This is the minimum viable spec change to unlock a complete agent surface from a PM-style document.
+
+### 7. Behavioral specs have a hard ceiling for MCP quality
+
+Exp 03 received approximately 3× more content in v2 — the facilitator curation role, discussion mode with keyboard shortcuts, merge dialog similarity scoring, all 9 prompt categories, QR code in lobby. MCP score: still 1. Read-only. No `create_session`, no `add_activity`.
+
+This is not a content problem — it is a framing problem. A spec that describes *what users do* will always produce a UI-first implementation. The agent surface requires describing *what operations the system exposes*, regardless of how detailed the behavioral description becomes.
+
+**Implication:** If your spec format is behavioral (user stories, role descriptions, journey maps), add a dedicated "agent surface" section that explicitly names MCP tools. Without it, no amount of detail will produce a complete MCP.
+
+### 8. The simplicity paradox — core feature reliability
+
+Exp 01 (problem statement) had the most reliable core feature in v2: the automatable flagging mechanism worked correctly while all three more-detailed experiments' versions failed or partially broke. 
+
+When Claude has less spec to work with, it focuses on the one thing the problem describes. When given a larger spec, attention spreads across 30+ features and the simplest implementation of each gets fragmented. **For a single critical feature, a focused problem statement can outperform a comprehensive technical spec.**
+
+### 9. Spec corrections propagate precisely into generated code
+
+Exp 04 v1 had a wrong quadrant label (`celebrate` instead of `STRATEGIC`). The v2 spec corrected it. The v2 output had the correct label. The spec is not just documentation — it is compiled. Errors in the spec produce errors in the code; corrections in the spec produce corrections in the code. This applies to field names, option values, formula constants, and UI copy equally.
+
+---
+
+## The Exp 05 Plan — Closing the Loop
+
+The study concludes with a codebase-first approach: build the ideal implementation from the Claude Design mocks (iterating until it matches the hi-fi prototype), then extract a comprehensive spec from the working codebase. That extracted spec — written by AI from working code rather than by a human before it exists — is then adapted into all four spec formats and used for one final round.
+
+**The central question of the final round:** If all four spec formats describe identical feature content (derived from a real implementation), does spec *format* still affect output quality?
+
+If yes — format matters independently of content. If no — the earlier differences were content gaps, not format effects. Either answer is a clean finding.

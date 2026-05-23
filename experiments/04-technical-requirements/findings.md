@@ -9,9 +9,30 @@
 
 | # | Prompt | What was missing / wrong | What it fixed |
 |---|---|---|---|
-| 1 | _(initial prompt)_ | — | Initial generation |
+| 1 | _(initial prompt — v1 spec)_ | — | Initial generation (v1) |
+| 2 | _(initial prompt — v2 spec)_ | — | Fresh generation from corrected and expanded technical spec |
 
 **Total prompts to reach final state:** TBD — tracked during iteration phase
+
+---
+
+## Second Pass Results (v2 Spec)
+
+**MCP:** Remains the best of all four experiments. Everything present — add items, review items, classify, flag. Full engineer and facilitator workflow accessible via agent. The v2 spec fixes (correct quadrant labels, full prompt category list, discussion mode keyboard shortcuts, export modal tabs) all propagated correctly into the implementation.
+
+**UI:** "Maybe the best." Grouped view present and working. Priority matrix nearly worked — closest of all four experiments. Very high quality overall. Export not great (consistent weakness across all experiments). The v2 spec's corrected `STRATEGIC` quadrant label and explicit component descriptions produced a noticeably more complete first pass than v1.
+
+**Consistent strength:** Technical specs maintain quality across passes because the implementation space is fully defined. There's no guesswork on data model, API shape, MCP tools, or skill steps — Claude executes against the spec rather than inventing.
+
+### v2 Score Adjustments
+| Dimension | v1 Score | v2 Score | Change | Notes |
+|---|---|---|---|---|
+| Completeness | 3 | 4 | ↑ | Grouped view works; matrix nearly works; export still weak |
+| Code Correctness | 3 | 4 | ↑ | More flows working correctly; matrix close but not perfect |
+| Architecture & Design | 3 | 4 | ↑ | Correct data model (tpo/freq/energy); all quadrant labels right |
+| MCP Quality | 5 | 5 | → | Maintained — full workflow, full CRUD, facilitator auth |
+| Skills Quality | 4.5 | 4.5 | → | Maintained — three skills, PM tool formats, Given/When/Then |
+| **Total** | **18.5** | **21.5** | ↑↑ | |
 
 ---
 

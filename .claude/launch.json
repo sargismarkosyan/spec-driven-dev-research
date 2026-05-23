@@ -30,6 +30,12 @@
       "runtimeExecutable": "wsl",
       "runtimeArgs": ["zsh", "-i", "-c", "cd /home/sargis/Projects/spec-driven-dev-research/experiments/04-technical-requirements/output && PORT=3040 npm run dev"],
       "port": 3040
+    },
+    {
+      "name": "experiment-05",
+      "runtimeExecutable": "wsl",
+      "runtimeArgs": ["zsh", "-i", "-c", "cd /home/sargis/Projects/spec-driven-dev-research/experiments/05-calude-design/output && npm run dev"],
+      "port": 3050
     }
   ]
 }

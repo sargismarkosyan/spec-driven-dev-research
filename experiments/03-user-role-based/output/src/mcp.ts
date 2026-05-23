@@ -2,147 +2,237 @@ import type { Express, Request, Response } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
-import state from './store';
-
-function automationScore(a: { automatable: string; repetitive: string; duration: string }) {
-  const auto = ({ yes: 3, maybe: 2, no: 1 } as Record<string, number>)[a.automatable] ?? 0;
-  const rep = ({ yes: 2, sometimes: 1, no: 0 } as Record<string, number>)[a.repetitive] ?? 0;
-  const dur = ({ significant: 2, medium: 1, quick: 0 } as Record<string, number>)[a.duration] ?? 0;
-  return auto + rep + dur;
-}
+import state, { computeWeeklyHours } from './store';
 
 const buildServer = () => {
-  const server = new McpServer({ name: 'toil-tracker', version: '0.1.0' });
+  const server = new McpServer({
+    name: 'toil-tracker',
+    version: '1.0.0',
+  });
+
+  // ── Tools ──────────────────────────────────────────────────────────────────
 
   server.tool(
-    'get_status',
-    'Returns the current status of the Toil Tracker server.',
+    'list_sessions',
+    'List all active sessions with basic metadata.',
     {},
-    async () => ({ content: [{ type: 'text', text: 'Toil Tracker MCP server is running.' }] })
+    async () => {
+      const sessions = Array.from(state.sessions.values()).map((s) => ({
+        id: s.id,
+        name: s.name,
+        phase: s.phase,
+        participantCount: s.participants.size,
+        activityCount: Array.from(s.activities.values()).filter((a) => !a.mergedInto).length,
+        createdAt: s.createdAt,
+      }));
+      return { content: [{ type: 'text', text: JSON.stringify(sessions, null, 2) }] };
+    }
   );
 
   server.tool(
     'get_session',
-    'Get full session data including all activities and participants.',
-    { sessionId: z.string().describe('The session ID') },
-    async ({ sessionId }) => {
-      const session = state.sessions.get(sessionId);
+    'Get full details of a session including participants and activity summary.',
+    { session_id: z.string().describe('The session ID') },
+    async ({ session_id }) => {
+      const session = state.sessions.get(session_id);
       if (!session) return { content: [{ type: 'text', text: 'Session not found.' }] };
-      const data = {
+
+      const activeActivities = Array.from(session.activities.values()).filter((a) => !a.mergedInto);
+      const flagged = activeActivities.filter((a) => a.flagged).length;
+      const discussed = activeActivities.filter((a) => a.discussedAt).length;
+
+      const summary = {
         id: session.id,
-        title: session.title,
-        status: session.status,
-        participants: Array.from(session.participants.values()).map(p => p.name),
-        activityCount: session.activities.length,
-        activities: session.activities,
+        name: session.name,
+        phase: session.phase,
+        facilitatorName: session.facilitatorName,
+        submissionWindowMinutes: session.submissionWindowMinutes,
+        showTeamFeed: session.showTeamFeedToEngineers,
+        participants: Array.from(session.participants.values()).map((p) => ({
+          name: p.name,
+          role: p.role,
+          isOnline: p.isOnline,
+          joinedAt: p.joinedAt,
+        })),
+        activityCount: activeActivities.length,
+        flaggedCount: flagged,
+        discussedCount: discussed,
+        discussionProgress:
+          session.phase === 'discussion'
+            ? `${session.discussionIndex + 1} of ${session.discussionOrder.length}`
+            : null,
+        createdAt: session.createdAt,
       };
-      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+      return { content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }] };
     }
   );
 
   server.tool(
     'list_activities',
-    'List activities in a session with optional filters.',
+    'List activities for a session. Optionally filter by energy, flagged status, or automatability verdict.',
     {
-      sessionId: z.string().describe('The session ID'),
-      automatable: z.enum(['yes', 'maybe', 'no']).optional().describe('Filter by automation potential'),
-      priority: z.enum(['high', 'medium', 'low']).optional().describe('Filter by priority'),
+      session_id: z.string().describe('The session ID'),
+      energy: z
+        .enum(['energizes', 'neutral', 'drains'])
+        .optional()
+        .describe('Filter by energy level'),
       flagged: z.boolean().optional().describe('Filter to flagged activities only'),
+      automatability: z
+        .enum(['yes', 'maybe', 'no', 'unset'])
+        .optional()
+        .describe('Filter by automatability verdict'),
     },
-    async ({ sessionId, automatable, priority, flagged }) => {
-      const session = state.sessions.get(sessionId);
+    async ({ session_id, energy, flagged, automatability }) => {
+      const session = state.sessions.get(session_id);
       if (!session) return { content: [{ type: 'text', text: 'Session not found.' }] };
-      let activities = session.activities;
-      if (automatable) activities = activities.filter(a => a.automatable === automatable);
-      if (priority) activities = activities.filter(a => a.priority === priority);
-      if (flagged !== undefined) activities = activities.filter(a => a.flagged === flagged);
-      return { content: [{ type: 'text', text: JSON.stringify(activities, null, 2) }] };
+
+      let activities = Array.from(session.activities.values()).filter((a) => !a.mergedInto);
+
+      if (energy) activities = activities.filter((a) => a.energy === energy);
+      if (flagged !== undefined) activities = activities.filter((a) => a.flagged === flagged);
+      if (automatability) {
+        if (automatability === 'unset') {
+          activities = activities.filter((a) => a.automatability === null);
+        } else {
+          activities = activities.filter((a) => a.automatability === automatability);
+        }
+      }
+
+      const result = activities.map((a) => ({
+        id: a.id,
+        title: a.title,
+        author: a.authorName,
+        coAuthors: a.coAuthors.map((c) => c.name),
+        timePerOccurrence: a.timePerOccurrence,
+        frequency: a.frequency,
+        weeklyHours: computeWeeklyHours(a.timePerOccurrence, a.frequency).toFixed(2),
+        energy: a.energy,
+        automatability: a.automatability,
+        facilitatorNote: a.facilitatorNote || null,
+        flagged: a.flagged,
+        createdAt: a.createdAt,
+      }));
+
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
 
   server.tool(
-    'get_automation_candidates',
-    'Return activities ranked by automation potential score.',
-    {
-      sessionId: z.string().describe('The session ID'),
-      limit: z.number().int().min(1).max(50).default(10).describe('Max candidates to return'),
-    },
-    async ({ sessionId, limit }) => {
-      const session = state.sessions.get(sessionId);
+    'get_priority_matrix',
+    'Get activities organized by the 2×2 priority matrix quadrants (effort × energy).',
+    { session_id: z.string().describe('The session ID') },
+    async ({ session_id }) => {
+      const session = state.sessions.get(session_id);
       if (!session) return { content: [{ type: 'text', text: 'Session not found.' }] };
-      const ranked = [...session.activities]
-        .map(a => ({ ...a, score: automationScore(a) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, limit);
-      return { content: [{ type: 'text', text: JSON.stringify(ranked, null, 2) }] };
+
+      const activities = Array.from(session.activities.values()).filter((a) => !a.mergedInto);
+
+      const EFFORT_THRESHOLD = 2; // hours/week
+
+      const quadrants: Record<string, typeof activities> = {
+        PRIORITY: [],
+        TOLERABLE: [],
+        STRATEGIC: [],
+        HEALTHY: [],
+      };
+
+      for (const a of activities) {
+        const hrs = computeWeeklyHours(a.timePerOccurrence, a.frequency);
+        const highEffort = hrs >= EFFORT_THRESHOLD;
+        const draining = a.energy === 'drains';
+
+        if (draining && highEffort) quadrants.PRIORITY.push(a);
+        else if (draining && !highEffort) quadrants.TOLERABLE.push(a);
+        else if (!draining && highEffort) quadrants.STRATEGIC.push(a);
+        else quadrants.HEALTHY.push(a);
+      }
+
+      const format = (list: typeof activities) =>
+        list.map((a) => ({
+          title: a.title,
+          author: a.authorName,
+          weeklyHours: computeWeeklyHours(a.timePerOccurrence, a.frequency).toFixed(2),
+          energy: a.energy,
+          automatability: a.automatability,
+          flagged: a.flagged,
+        }));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                PRIORITY: format(quadrants.PRIORITY),
+                TOLERABLE: format(quadrants.TOLERABLE),
+                STRATEGIC: format(quadrants.STRATEGIC),
+                HEALTHY: format(quadrants.HEALTHY),
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
     }
   );
 
   server.tool(
-    'flag_activity',
-    'Flag or unflag an activity for facilitator attention.',
-    {
-      sessionId: z.string().describe('The session ID'),
-      activityId: z.string().describe('The activity ID'),
-      flagged: z.boolean().describe('true to flag, false to unflag'),
-    },
-    async ({ sessionId, activityId, flagged }) => {
-      const session = state.sessions.get(sessionId);
+    'export_session',
+    'Export flagged activities and session summary for use in planning or backlog creation.',
+    { session_id: z.string().describe('The session ID') },
+    async ({ session_id }) => {
+      const session = state.sessions.get(session_id);
       if (!session) return { content: [{ type: 'text', text: 'Session not found.' }] };
-      const activity = session.activities.find(a => a.id === activityId);
-      if (!activity) return { content: [{ type: 'text', text: 'Activity not found.' }] };
-      activity.flagged = flagged;
-      return { content: [{ type: 'text', text: `Activity "${activity.title}" ${flagged ? 'flagged' : 'unflagged'}.` }] };
-    }
-  );
 
-  server.tool(
-    'set_priority',
-    'Set the priority of an activity.',
-    {
-      sessionId: z.string().describe('The session ID'),
-      activityId: z.string().describe('The activity ID'),
-      priority: z.enum(['high', 'medium', 'low']).describe('Priority level'),
-    },
-    async ({ sessionId, activityId, priority }) => {
-      const session = state.sessions.get(sessionId);
-      if (!session) return { content: [{ type: 'text', text: 'Session not found.' }] };
-      const activity = session.activities.find(a => a.id === activityId);
-      if (!activity) return { content: [{ type: 'text', text: 'Activity not found.' }] };
-      activity.priority = priority;
-      return { content: [{ type: 'text', text: `Priority for "${activity.title}" set to ${priority}.` }] };
-    }
-  );
+      const all = Array.from(session.activities.values()).filter((a) => !a.mergedInto);
+      const flagged = all.filter((a) => a.flagged);
 
-  server.tool(
-    'generate_summary',
-    'Generate a plain-text summary of the session suitable for sharing.',
-    { sessionId: z.string().describe('The session ID') },
-    async ({ sessionId }) => {
-      const session = state.sessions.get(sessionId);
-      if (!session) return { content: [{ type: 'text', text: 'Session not found.' }] };
-      const total = session.activities.length;
-      const yesAuto = session.activities.filter(a => a.automatable === 'yes').length;
-      const maybeAuto = session.activities.filter(a => a.automatable === 'maybe').length;
-      const prioritized = session.activities.filter(a => a.priority).length;
-      const top3 = [...session.activities]
-        .sort((a, b) => automationScore(b) - automationScore(a))
-        .slice(0, 3)
-        .map(a => `- ${a.title} (automatable: ${a.automatable}, ${a.duration}, repetitive: ${a.repetitive})`)
-        .join('\n');
-      const summary = [
-        `Session: ${session.title}`,
-        `Status: ${session.status}`,
-        `Participants: ${session.participants.size}`,
-        `Total activities: ${total}`,
-        `High automation potential: ${yesAuto}`,
-        `Medium automation potential: ${maybeAuto}`,
-        `Prioritized: ${prioritized}`,
-        '',
-        'Top automation candidates:',
-        top3 || '(none yet)',
-      ].join('\n');
-      return { content: [{ type: 'text', text: summary }] };
+      const EFFORT_THRESHOLD = 2;
+
+      const export_ = {
+        session: {
+          name: session.name,
+          date: session.createdAt,
+          facilitator: session.facilitatorName,
+          participantCount: session.participants.size,
+          totalActivities: all.length,
+          flaggedActivities: flagged.length,
+        },
+        flagged: flagged.map((a) => ({
+          title: a.title,
+          authors: [a.authorName, ...a.coAuthors.map((c) => c.name)].join(', '),
+          timePerOccurrence: a.timePerOccurrence,
+          frequency: a.frequency,
+          weeklyHours: computeWeeklyHours(a.timePerOccurrence, a.frequency).toFixed(2),
+          energy: a.energy,
+          automatability: a.automatability,
+          facilitatorNote: a.facilitatorNote || null,
+          quadrant:
+            a.energy === 'drains' && computeWeeklyHours(a.timePerOccurrence, a.frequency) >= EFFORT_THRESHOLD
+              ? 'PRIORITY'
+              : a.energy === 'drains'
+              ? 'TOLERABLE'
+              : computeWeeklyHours(a.timePerOccurrence, a.frequency) >= EFFORT_THRESHOLD
+              ? 'STRATEGIC'
+              : 'HEALTHY',
+        })),
+        stats: {
+          byEnergy: {
+            drains: all.filter((a) => a.energy === 'drains').length,
+            neutral: all.filter((a) => a.energy === 'neutral').length,
+            energizes: all.filter((a) => a.energy === 'energizes').length,
+          },
+          byVerdict: {
+            yes: all.filter((a) => a.automatability === 'yes').length,
+            maybe: all.filter((a) => a.automatability === 'maybe').length,
+            no: all.filter((a) => a.automatability === 'no').length,
+            unset: all.filter((a) => a.automatability === null).length,
+          },
+        },
+      };
+
+      return { content: [{ type: 'text', text: JSON.stringify(export_, null, 2) }] };
     }
   );
 

@@ -1,63 +1,48 @@
-# Skill: Draft Backlog
-
-Turn the prioritized results of a Toil Tracker session into a ready-to-import backlog of automation tickets.
-
-## Trigger
-
-Use this skill when the facilitator asks to draft tickets, create backlog items, or produce a task list from the session results.
-
-## Inputs
-
-- `session_id` (required) — The Toil Tracker session ID.
-- `format` (optional) — Output format: `markdown` (default) or `json`.
-
-## Steps
-
-1. Call `list_activities` with `session_id`. Filter to activities that have a `priority` set (high / medium / low).
-2. If no prioritized activities exist, call `get_automation_candidates` with `limit: 10` as a fallback and use those as the candidate pool. Inform the facilitator that no priorities were set and these are based on automation score.
-3. For each prioritized activity, draft a ticket with:
-   - **Title**: "Automate: {activity title}" (or "Eliminate: {activity title}" if `automatable = yes` and `enjoyment = no`)
-   - **Priority**: from the activity's priority field
-   - **Description**: 2-3 sentences covering:
-     - What the activity is and who does it
-     - Why it's a good automation target (duration + repetitiveness)
-     - A suggested approach (script, tool, workflow automation, AI assistant — keep it brief and speculative)
-   - **Labels**: derive from the activity tags (e.g. `automation`, `toil`, `significant` if duration is significant)
-4. Sort tickets: high priority first, then medium, then low. Within a priority group, sort by automation score (significant + repetitive + automatable = yes first).
-
-## Output format (markdown)
-
-```markdown
-## Backlog — {session title}
-Generated from {n} prioritized activities.
-
+---
+name: draft-backlog
+description: Turn flagged session activities into a structured backlog draft, ready for the facilitator to review and paste into their planning tool.
 ---
 
-### [High] Automate: {title}
-**Labels:** automation, toil, significant
-{description}
+## Instructions
 
----
+Use this skill when the facilitator asks to turn session output into backlog items, action items, or tickets.
 
-### [Medium] Automate: {title}
-…
-```
+**Steps:**
 
-## Output format (json)
+1. Call `export_session` to get the full flagged activity list with effort data, verdicts, and facilitator notes.
 
-```json
-[
-  {
-    "title": "Automate: {title}",
-    "priority": "high",
-    "labels": ["automation", "toil"],
-    "description": "…"
-  }
-]
-```
+2. For each flagged activity, draft a backlog item with the following fields:
 
-## Guardrails
+   ```
+   Title: [activity title]
+   Type: [Automation | Process improvement | Remove / stop doing | Investigate]
+   Priority: [P1 / P2 / P3]
+   Author(s): [names of engineers who submitted this]
+   Effort signal: [time per occurrence] × [frequency] ≈ [weekly hours] hrs/week
+   Energy: [energizes / neutral / drains]
+   Team verdict: [yes / maybe / no / not discussed]
+   Facilitator note: [facilitator's note, or "—"]
+   Description: [one sentence describing what needs to happen]
+   ```
 
-- Do not invent details not present in the activity data.
-- Keep suggested approaches short and clearly marked as suggestions ("could be automated with…", "consider…").
-- If the session status is `open`, note that the session is still in progress and results may change.
+3. Assign Type based on verdict and quadrant:
+   - verdict "yes" → Automation
+   - verdict "maybe" + draining → Process improvement or Automation (flag as TBD)
+   - PRIORITY quadrant + verdict "no" → Remove / stop doing (team said no to automation, but it's still draining and expensive)
+   - everything else → Investigate
+
+4. Assign Priority:
+   - PRIORITY quadrant + verdict "yes" → P1
+   - PRIORITY quadrant + other → P2
+   - other quadrants + flagged → P3
+
+5. Write the Description field as a single sentence starting with a verb: "Automate X", "Reduce frequency of Y by Z", "Decide whether to stop doing X", "Investigate whether X can be delegated or batched."
+
+6. After presenting the draft, ask:
+   - "Does the type assignment look right for each item?"
+   - "Any items to add, remove, or reprioritize?"
+
+   Do not finalize or post anything until the facilitator confirms. This draft is for their review.
+
+**Output format:**
+Present as a numbered markdown list, one item per flagged activity. Use the fields above as a consistent template so the facilitator can paste directly into Linear, Jira, Notion, or their planning tool of choice.

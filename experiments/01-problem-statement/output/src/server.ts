@@ -6,7 +6,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import { setupMCP } from './mcp';
 import state from './store';
-import type { Frequency, Role } from './store';
+import type { Role, Energy, Verdict, Activity } from './store';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -22,37 +22,66 @@ nextApp.prepare().then(() => {
 
   // ── REST API ───────────────────────────────────────────────────────────────
 
-  // Create a new session (facilitator action)
   app.post('/api/sessions', (req, res) => {
-    const { name } = req.body as { name: string };
-    if (!name?.trim()) { res.status(400).json({ error: 'name required' }); return; }
-    const session = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
+    const { facilitatorName } = req.body as { facilitatorName: string };
+    if (!facilitatorName?.trim()) { res.status(400).json({ error: 'facilitatorName required' }); return; }
+    const id = crypto.randomUUID();
+    state.sessions.set(id, {
+      id,
+      facilitatorId: '',
+      phase: 'lobby',
       createdAt: new Date(),
-      status: 'open' as const,
-    };
-    state.sessions.set(session.id, session);
-    res.json(session);
+    });
+    res.json({ id });
   });
 
-  // Get session details + participants + activities
   app.get('/api/sessions/:id', (req, res) => {
     const session = state.sessions.get(req.params.id);
-    if (!session) { res.status(404).json({ error: 'not found' }); return; }
-    const participants = Array.from(state.participants.values()).filter(
-      (p) => p.sessionId === req.params.id
-    );
-    const activities = state.activities.filter((a) => a.sessionId === req.params.id);
-    res.json({ session, participants, activities });
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+    const activities = state.activities.filter(a => a.sessionId === req.params.id);
+    const participants = Array.from(state.participants.values()).filter(p => p.sessionId === req.params.id);
+    res.json({ session, activities, participants });
   });
 
-  // Close a session (facilitator action)
-  app.patch('/api/sessions/:id/close', (req, res) => {
+  app.get('/api/sessions/:id/export', (req, res) => {
     const session = state.sessions.get(req.params.id);
-    if (!session) { res.status(404).json({ error: 'not found' }); return; }
-    session.status = 'closed';
-    res.json(session);
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+    const activities = state.activities.filter(a => a.sessionId === req.params.id);
+    const flagged = activities.filter(a => a.flagged).sort((a, b) => b.weeklyMinutes - a.weeklyMinutes);
+    const all = activities.sort((a, b) => b.weeklyMinutes - a.weeklyMinutes);
+
+    let md = `# Toil Tracker — Session Export\n\n`;
+    md += `**Session ID:** ${session.id}  \n`;
+    md += `**Date:** ${session.createdAt.toISOString().split('T')[0]}  \n`;
+    md += `**Total activities logged:** ${activities.length}  \n\n`;
+
+    md += `## Flagged Priority Items\n\n`;
+    if (flagged.length === 0) {
+      md += `_No items flagged._\n\n`;
+    } else {
+      for (const a of flagged) {
+        const authors = a.mergedAuthorNames.length > 0
+          ? [a.authorName, ...a.mergedAuthorNames].join(', ')
+          : a.authorName;
+        md += `### ${a.description}\n`;
+        md += `- **Authors:** ${authors}\n`;
+        md += `- **Weekly cost:** ${a.weeklyMinutes} min/week (${a.durationMinutes} min × ${a.frequencyPerWeek}×/week)\n`;
+        md += `- **Energy:** ${a.energy}\n`;
+        if (a.verdict) md += `- **Verdict:** ${a.verdict}\n`;
+        md += `\n`;
+      }
+    }
+
+    md += `## All Activities\n\n`;
+    for (const a of all) {
+      const flag = a.flagged ? ' ⚑' : '';
+      md += `- **${a.description}**${flag} — ${a.weeklyMinutes} min/week, ${a.energy}`;
+      if (a.verdict) md += `, verdict: ${a.verdict}`;
+      md += `\n`;
+    }
+
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(md);
   });
 
   // ── MCP ────────────────────────────────────────────────────────────────────
@@ -72,88 +101,108 @@ nextApp.prepare().then(() => {
   const io = new Server(httpServer, { cors: { origin: '*' } });
 
   io.on('connection', (socket) => {
-    // session:join — { sessionId, name, role }
-    socket.on('session:join', (payload: { sessionId: string; name: string; role: Role }) => {
-      const { sessionId, name, role } = payload;
-      const session = state.sessions.get(sessionId);
-      if (!session) { socket.emit('error', 'session not found'); return; }
+    let currentUser: { id: string; name: string; sessionId: string; role: Role } | null = null;
 
-      const participant = { socketId: socket.id, name, role, sessionId };
+    socket.on('join', ({ name, sessionId, role }: { name: string; sessionId: string; role: Role }) => {
+      const session = state.sessions.get(sessionId);
+      if (!session) { socket.emit('error', 'Session not found'); return; }
+
+      const participant = { id: socket.id, name, role, sessionId, joinedAt: new Date() };
       state.participants.set(socket.id, participant);
+      currentUser = { id: socket.id, name, sessionId, role };
+
+      if (role === 'facilitator' && !session.facilitatorId) {
+        session.facilitatorId = socket.id;
+      }
+
       socket.join(sessionId);
 
-      const participants = Array.from(state.participants.values()).filter(
-        (p) => p.sessionId === sessionId
-      );
-      const activities = state.activities.filter((a) => a.sessionId === sessionId);
-
-      socket.emit('session:state', { session, participants, activities });
-      socket.to(sessionId).emit('participant:joined', participant);
+      const activities = state.activities.filter(a => a.sessionId === sessionId);
+      const participants = Array.from(state.participants.values()).filter(p => p.sessionId === sessionId);
+      socket.emit('state', { session, activities, participants });
+      socket.to(sessionId).emit('user:joined', participant);
     });
 
-    // activity:add — { sessionId, description, category, frequency, minutesPerOccurrence, painLevel }
-    socket.on('activity:add', (payload: {
-      sessionId: string;
-      description: string;
-      category: string;
-      frequency: Frequency;
-      minutesPerOccurrence: number;
-      painLevel: number;
-    }) => {
-      const participant = state.participants.get(socket.id);
-      if (!participant) return;
-      const session = state.sessions.get(payload.sessionId);
-      if (!session || session.status === 'closed') return;
+    socket.on('activity:add', ({ description, durationMinutes, frequencyPerWeek, energy }:
+      { description: string; durationMinutes: number; frequencyPerWeek: number; energy: Energy }) => {
+      if (!currentUser) return;
+      const session = state.sessions.get(currentUser.sessionId);
+      if (!session || session.phase !== 'input') return;
 
-      const activity = {
+      const activity: Activity = {
         id: crypto.randomUUID(),
-        sessionId: payload.sessionId,
-        authorId: socket.id,
-        authorName: participant.name,
-        description: payload.description,
-        category: payload.category,
-        frequency: payload.frequency,
-        minutesPerOccurrence: payload.minutesPerOccurrence,
-        painLevel: Math.min(5, Math.max(1, payload.painLevel)),
+        sessionId: currentUser.sessionId,
+        authorId: currentUser.id,
+        authorName: currentUser.name,
+        description: description.trim(),
+        durationMinutes,
+        frequencyPerWeek,
+        weeklyMinutes: durationMinutes * frequencyPerWeek,
+        energy,
         flagged: false,
+        mergedFromIds: [],
+        mergedAuthorNames: [],
         createdAt: new Date(),
       };
       state.activities.push(activity);
-      io.to(payload.sessionId).emit('activity:added', activity);
+      io.to(currentUser.sessionId).emit('activity:added', activity);
     });
 
-    // activity:flag — { activityId } — toggles flag (facilitator action)
-    socket.on('activity:flag', (payload: { activityId: string }) => {
-      const participant = state.participants.get(socket.id);
-      if (!participant || participant.role !== 'facilitator') return;
-
-      const activity = state.activities.find((a) => a.id === payload.activityId);
-      if (!activity || activity.sessionId !== participant.sessionId) return;
-
-      activity.flagged = !activity.flagged;
-      io.to(participant.sessionId).emit('activity:flagged', {
-        activityId: activity.id,
-        flagged: activity.flagged,
-      });
+    socket.on('activity:update', ({ id, description, verdict, flagged }:
+      { id: string; description?: string; verdict?: Verdict; flagged?: boolean }) => {
+      if (!currentUser || currentUser.role !== 'facilitator') return;
+      const activity = state.activities.find(a => a.id === id && a.sessionId === currentUser!.sessionId);
+      if (!activity) return;
+      if (description !== undefined) activity.description = description.trim();
+      if (verdict !== undefined) activity.verdict = verdict;
+      if (flagged !== undefined) activity.flagged = flagged;
+      io.to(currentUser.sessionId).emit('activity:updated', activity);
     });
 
-    // session:close — facilitator closes the session
-    socket.on('session:close', (payload: { sessionId: string }) => {
-      const participant = state.participants.get(socket.id);
-      if (!participant || participant.role !== 'facilitator') return;
+    socket.on('activity:delete', (id: string) => {
+      if (!currentUser || currentUser.role !== 'facilitator') return;
+      const idx = state.activities.findIndex(a => a.id === id && a.sessionId === currentUser!.sessionId);
+      if (idx === -1) return;
+      state.activities.splice(idx, 1);
+      io.to(currentUser.sessionId).emit('activity:deleted', id);
+    });
 
-      const session = state.sessions.get(payload.sessionId);
+    socket.on('activity:merge', ({ keepId, removeId }: { keepId: string; removeId: string }) => {
+      if (!currentUser || currentUser.role !== 'facilitator') return;
+      const keep = state.activities.find(a => a.id === keepId && a.sessionId === currentUser!.sessionId);
+      const remove = state.activities.find(a => a.id === removeId && a.sessionId === currentUser!.sessionId);
+      if (!keep || !remove) return;
+
+      keep.weeklyMinutes += remove.weeklyMinutes;
+      keep.mergedFromIds = [...keep.mergedFromIds, remove.id, ...remove.mergedFromIds];
+      keep.mergedAuthorNames = [
+        ...keep.mergedAuthorNames,
+        remove.authorName,
+        ...remove.mergedAuthorNames,
+      ].filter((n, i, arr) => arr.indexOf(n) === i && n !== keep.authorName);
+
+      const removeIdx = state.activities.findIndex(a => a.id === removeId);
+      state.activities.splice(removeIdx, 1);
+
+      io.to(currentUser.sessionId).emit('activity:merged', { merged: keep, removedIds: [removeId] });
+    });
+
+    socket.on('session:advance', () => {
+      if (!currentUser || currentUser.role !== 'facilitator') return;
+      const session = state.sessions.get(currentUser.sessionId);
       if (!session) return;
-
-      session.status = 'closed';
-      io.to(payload.sessionId).emit('session:closed', payload.sessionId);
+      const phases: Array<typeof session.phase> = ['lobby', 'input', 'discussion', 'closed'];
+      const idx = phases.indexOf(session.phase);
+      if (idx < phases.length - 1) {
+        session.phase = phases[idx + 1];
+        io.to(currentUser.sessionId).emit('session:phase', session.phase);
+      }
     });
 
     socket.on('disconnect', () => {
-      const participant = state.participants.get(socket.id);
-      if (participant) {
-        state.participants.delete(socket.id);
-        io.to(participant.sessionId).emit('participant:left', socket.id);
+      if (currentUser) {
+        state.participants.delete(currentUser.id);
+        io.to(currentUser.sessionId).emit('user:left', currentUser.id);
       }
     });
   });

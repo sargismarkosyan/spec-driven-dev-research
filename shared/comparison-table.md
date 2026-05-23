@@ -1,10 +1,10 @@
 # Cross-Experiment Comparison
 
-First-pass scores — recorded before the iteration phase. Iteration counts (prompts to final state) will be filled in after each experiment reaches its ideal state.
+Two passes recorded. **v1** = first-pass with original specs. **v2** = fresh generation from updated specs (extracted from Claude Design mocks). Iteration counts will be filled in after each experiment reaches final state.
 
 ---
 
-## Scores
+## Scores — v1 (Original Specs)
 
 | Dimension | 01 Problem Statement | 02 PM Requirements | 03 User Role Based | 04 Technical |
 |---|---|---|---|---|
@@ -14,9 +14,34 @@ First-pass scores — recorded before the iteration phase. Iteration counts (pro
 | MCP Quality | 4 | 2 | 1 | 5 |
 | Skills Quality | 4.0 | 3.5 | 4.5 | 4.5 |
 | **Total** | **18** | **14.5** | **15.5** | **18.5** |
-| **Prompts to final state** | TBD | TBD | TBD | TBD |
+
+## Scores — v2 (Updated Specs from Design Mocks)
+
+| Dimension | 01 Problem Statement | 02 PM Requirements | 03 User Role Based | 04 Technical |
+|---|---|---|---|---|
+| Completeness | 3 | 4 | 3.5 | 4 |
+| Code Correctness | 4 | 3.5 | 3.5 | 4 |
+| Architecture & Design | 3 | 3.5 | 4 | 4 |
+| MCP Quality | 3 | 4 | 1 | 5 |
+| Skills Quality | 3.5 | 3.5 | 4.0 | 4.5 |
+| **Total** | **16.5** | **18.5** | **16** | **21.5** |
+| **Δ vs v1** | −1.5 | **+4** | +0.5 | **+3** |
 
 > Skills Quality uses Cursor's per-skill average (more granular than the rubric's 1–5 integer scale).
+
+### What drove the v2 changes
+
+| Experiment | Key driver |
+|---|---|
+| 01 | Slight MCP regression — problem statement still names no tools; v1 happened to include more by chance |
+| 02 | **Biggest jump (+4):** adding explicit MCP/skills acceptance criteria ("an agent can create sessions, add activities…") was enough to flip MCP from 2→4 |
+| 03 | Marginal UI improvement; MCP completely unchanged at 1 — behavioral spec plateau confirmed |
+| 04 | Spec corrections propagated (right quadrant labels, correct data model, 9 prompt categories, discussion shortcuts) |
+
+### The Exp 03 plateau finding
+Spec 03 received ~3× more content in v2 — new sections on the facilitator curation role, discussion mode keyboard shortcuts, merge dialog behavior, all 9 prompt categories. MCP score: still 1. **A behavioral spec, no matter how detailed, does not generate tool lists.** Only naming operations explicitly unlocks agent surface quality.
+
+---
 
 ---
 
@@ -54,13 +79,24 @@ First-pass scores — recorded before the iteration phase. Iteration counts (pro
 
 ## Iteration Cost by Surface
 
-| Surface | 01 | 02 | 03 | 04 |
-|---|---|---|---|---|
-| App (UI + API) | TBD | TBD | TBD | TBD |
-| MCP server | TBD | TBD | TBD | TBD |
-| Skills | TBD | TBD | TBD | TBD |
+| Surface | 01 | 02 | 03 | 04 | 05 (Design) |
+|---|---|---|---|---|---|
+| App (UI + API) | TBD | TBD | TBD | TBD | TBD |
+| MCP server | TBD | TBD | TBD | TBD | TBD |
+| Skills | TBD | TBD | TBD | TBD | TBD |
+| **Total prompts** | TBD | TBD | TBD | TBD | TBD |
 
 _Tracked during the iteration phase. 0 = first shot was correct._
+
+---
+
+## Experiment 05 — Claude Design Mocks
+
+A fifth experiment is running in parallel: the application is built directly from the Claude Design hi-fi prototype (12 artboards), with no written spec as input. The design files serve as the source of truth.
+
+**Purpose:** Establish the quality ceiling. The ideal implementation — as close to the design as possible — is reached through iteration. Once at ideal state, the codebase is used to extract a comprehensive spec. That extracted spec is then adapted into all four spec formats and used for the **final round** of all four experiments.
+
+**Final round hypothesis:** If all four spec formats describe the same ideal feature set (derived from a real working codebase), does format still affect output quality? The final round answers this.
 
 ---
 

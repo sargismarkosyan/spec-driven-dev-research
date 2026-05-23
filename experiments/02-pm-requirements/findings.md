@@ -9,9 +9,30 @@
 
 | # | Prompt | What was missing / wrong | What it fixed |
 |---|---|---|---|
-| 1 | _(initial prompt)_ | — | Initial generation |
+| 1 | _(initial prompt — v1 spec)_ | — | Initial generation (v1) |
+| 2 | _(initial prompt — v2 spec)_ | — | Fresh generation from fully-detailed PM requirements |
 
 **Total prompts to reach final state:** TBD — tracked during iteration phase
+
+---
+
+## Second Pass Results (v2 Spec)
+
+**MCP:** The biggest improvement across all four experiments pass-to-pass. v1 was missing `create_session` and `add_activity`; v2 now has everything — add activity, mark automatable, facilitator view all present and working via MCP. **This flip was caused by one change in the spec**: the new acceptance criteria explicitly state *"The application exposes an MCP server so an AI assistant can create sessions, join as a participant, add activities, classify activities, flag items..."* — naming the operations was enough to trigger the right tool design.
+
+**UI:** Noticeably better than v1. Live stream now includes suggestions (e.g. daily standup prompts). Had invite view. Controls present but not fully polished. Matrix didn't work. Export was not great. The overall impression: "If I iterate a bit more, this will have solid results."
+
+**Key finding:** Adding explicit MCP/skills acceptance criteria to a PM spec — even just naming the operations — was sufficient to go from MCP score 2 to MCP score ~4. The spec language doesn't need to be technical; it just needs to enumerate what the agent surface can do.
+
+### v2 Score Adjustments
+| Dimension | v1 Score | v2 Score | Change | Notes |
+|---|---|---|---|---|
+| Completeness | 3 | 4 | ↑ | Live stream, invite view, suggestions all present; matrix broken |
+| Code Correctness | 3 | 3.5 | ↑ | More flows working; matrix and export weak |
+| Architecture & Design | 3 | 3.5 | ↑ | Better product thinking; live stream with suggestions shows domain understanding |
+| MCP Quality | 2 | 4 | ↑↑ | Major jump: full engineer + facilitator workflow now present |
+| Skills Quality | 3.5 | 3.5 | → | Three skills present; still thin on guardrails |
+| **Total** | **14.5** | **18.5** | ↑↑ | |
 
 ---
 

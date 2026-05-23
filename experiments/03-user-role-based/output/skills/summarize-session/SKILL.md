@@ -1,54 +1,40 @@
-# Skill: Summarize Session
+---
+name: summarize-session
+description: Produce a concise narrative summary of a work audit session, covering participation, key themes, and what was decided.
+---
 
-Summarize the output of a Toil Tracker work audit session into a concise, shareable brief.
+## Instructions
 
-## Trigger
+Use this skill when a facilitator or stakeholder asks for a summary of a completed or in-progress session.
 
-Use this skill when the facilitator asks you to summarize a session, produce a recap, or share results with stakeholders who weren't in the meeting.
+**Steps:**
 
-## Inputs
+1. Call `get_session` with the session ID to get participant count, activity count, flagged count, and phase.
 
-- `session_id` (required) — The Toil Tracker session ID.
+2. Call `list_activities` to retrieve all activities. Note distribution across energy levels and identify the most commonly cited titles.
 
-## Steps
+3. Call `get_priority_matrix` to understand the quadrant breakdown.
 
-1. Call `get_session` with the session ID to retrieve all activities and metadata.
-2. Compute counts:
-   - Total activities
-   - Breakdown by `automatable`: yes / maybe / no
-   - Breakdown by `duration`: quick / medium / significant
-   - Number of flagged activities
-   - Number of activities with a priority set (high / medium / low)
-3. Identify the top 5 automation candidates by calling `get_automation_candidates` with `limit: 5`.
-4. Produce a plain-text summary with this structure:
+4. Write a summary with these sections:
 
-```
-## Work Audit Summary — {session title}
+   **Session overview**
+   - Session name, date, facilitator, number of participants and their roles
+   - Total activities logged, how many were flagged, how many were discussed
 
-**Status:** {open | reviewing | closed}
-**Participants:** {n}
-**Total activities logged:** {n}
+   **Key themes**
+   - Group activities by theme (meetings, on-call, manual work, etc.) based on titles and categories
+   - Name the 2–3 themes with the most entries
 
-### Automation breakdown
-- Strong candidates (automatable = yes): {n}
-- Possible candidates (automatable = maybe): {n}
-- Not automatable: {n}
+   **Energy signal**
+   - How many activities were draining vs. energizing vs. neutral
+   - Call out any activities that appeared multiple times (merged entries with co-authors)
 
-### Effort breakdown
-- Significant: {n}  |  Medium: {n}  |  Quick: {n}
+   **Priority quadrant**
+   - List the PRIORITY quadrant (draining + high effort) activities by name
+   - Note which were classified as automatable (yes/maybe) vs. not
 
-### Top automation candidates
-1. {title} — {duration}, {repetitive} repetitive, {enjoyment} enjoyment
-2. …
+   **What was decided**
+   - List flagged activities with their automatability verdict and any facilitator notes
+   - Summarize the team's overall signal: what is the dominant type of toil?
 
-### Prioritized items ({n} total)
-- [High] {title}
-- [Medium] {title}
-- …
-```
-
-5. If no activities have been logged, respond: "The session has no activities yet. Share the engineer link and ask participants to add their recurring work."
-
-## Output
-
-Return the formatted summary as plain text. Do not wrap it in a code block unless the user asks for markdown.
+5. Keep the summary factual and concise — this is a record of what the team found, not an interpretation or recommendation. Do not classify or flag anything autonomously.

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Work Audit · Hi-fi screens</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    html, body { margin: 0; padding: 0; background: #f0eee9; font-family: "IBM Plex Sans", system-ui, sans-serif; color: #1c1a16; }
+    #root { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="data.js"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="primitives.jsx"></script>
+  <script type="text/babel" src="screens-spec.jsx"></script>
+  <script type="text/babel" src="screens-facilitator-setup.jsx"></script>
+  <script type="text/babel" src="screens-engineer.jsx"></script>
+  <script type="text/babel" src="screens-facilitator-results.jsx"></script>
+  <script type="text/babel" src="screens-facilitator-merge.jsx"></script>
+  <script type="text/babel" src="screens-facilitator-edit.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+
+    function App() {
+      return (
+        <DesignCanvas>
+          <DCSection id="spec" title="00 · Spec & rationale" subtitle="Designer's brief — what we're building & why">
+            <DCArtboard id="00-brief" label="Brief · v0.2" width={960} height={1240}>
+              <SpecBrief />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="facilitator-setup" title="01 · Facilitator · Setup" subtitle="Creating and sharing a session">
+            <DCArtboard id="01-create" label="01 · Create session" width={1280} height={820}>
+              <CreateSession />
+            </DCArtboard>
+            <DCArtboard id="02-lobby" label="02 · Lobby" width={1280} height={820}>
+              <SessionLobby />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="engineer" title="02 · Engineer · Submission" subtitle="The 10 minutes between join and end-of-round">
+            <DCArtboard id="03-join" label="03 · Join" width={1280} height={820}>
+              <EngineerJoin />
+            </DCArtboard>
+            <DCArtboard id="04-empty" label="04 · Empty board" width={1280} height={820}>
+              <EngineerBoardEmpty />
+            </DCArtboard>
+            <DCArtboard id="05-active" label="05 · Active board" width={1280} height={820}>
+              <EngineerBoardActive />
+            </DCArtboard>
+            <DCArtboard id="06-add" label="06 · Add activity (inline)" width={1280} height={900}>
+              <EngineerAddActivity />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="results" title="03 · Facilitator · Aggregation & analysis" subtitle="The headline view + alternative arrangements">
+            <DCArtboard id="07-live" label="07 · Live monitoring" width={1280} height={820}>
+              <FacilitatorLive />
+            </DCArtboard>
+            <DCArtboard id="08-matrix" label="08 · Priority matrix (2×2)" width={1280} height={820}>
+              <FacilitatorMatrix />
+            </DCArtboard>
+            <DCArtboard id="09-grouped" label="09 · Grouped view" width={1280} height={820}>
+              <FacilitatorGrouped />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection id="discuss" title="04 · Discussion, actions & export" subtitle="Turning the board into a take-away">
+            <DCArtboard id="10-discuss" label="10 · Discussion w/ flagging" width={1280} height={820}>
+              <FacilitatorDiscussion />
+            </DCArtboard>
+            <DCArtboard id="10a-merge" label="10A · Merge (facilitator action)" width={1280} height={820}>
+              <FacilitatorMerge />
+            </DCArtboard>
+            <DCArtboard id="10b-edit" label="10B · Edit (facilitator action)" width={1280} height={820}>
+              <FacilitatorEdit />
+            </DCArtboard>
+            <DCArtboard id="11-export" label="11 · Export modal" width={1280} height={820}>
+              <FacilitatorExport />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

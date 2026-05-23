@@ -9,9 +9,30 @@
 
 | # | Prompt | What was missing / wrong | What it fixed |
 |---|---|---|---|
-| 1 | _(initial prompt)_ | — | Initial generation |
+| 1 | _(initial prompt — v1 spec)_ | — | Initial generation (v1) |
+| 2 | _(initial prompt — v2 spec)_ | — | Fresh generation from updated problem statement |
 
 **Total prompts to reach final state:** TBD — tracked during iteration phase
+
+---
+
+## Second Pass Results (v2 Spec)
+
+**MCP:** Still missing `add_activity` — same core gap as v1. Had to fall back to direct API calls to populate the session. Able to summarize and surface the facilitator view. The updated problem statement improved the problem framing and added the team-decision rationale for automatability, but it still names no tools — so Claude didn't invent the engineer-side MCP surface.
+
+**UI:** Simple but solid. Invite link present and working. Session start control correctly gated — activity creation blocked before session starts. No activity recommendation/prompt rail. **Automatable flagging worked best here of all four experiments** — the core prioritization feature was most reliable in the simplest implementation while the more-detailed experiments' versions failed or partially broke. Export Markdown worked end-to-end.
+
+**Key paradox:** Less spec produced more reliable core-feature execution. When Claude has to invent the solution, it focuses on the one thing the problem describes — identifying automatable work. When given a larger spec, attention spreads across 30+ features and the core logic becomes less reliable.
+
+### v2 Score Adjustments
+| Dimension | v1 Score | v2 Score | Change | Notes |
+|---|---|---|---|---|
+| Completeness | 3 | 3 | → | Still missing prompt rail, matrix, discussion mode; invite link now present |
+| Code Correctness | 4 | 4 | → | Core flows reliable; automatable flagging now confirmed working |
+| Architecture & Design | 3 | 3 | → | Data model still self-invented; problem framing improved |
+| MCP Quality | 4 | 3 | ↓ | add_activity still absent; v1 actually had more tools overall |
+| Skills Quality | 4 | 3.5 | ↓ | Fewer skills than other experiments; present but thin |
+| **Total** | **18** | **16.5** | ↓ | |
 
 ---
 

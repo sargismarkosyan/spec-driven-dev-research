@@ -9,9 +9,30 @@
 
 | # | Prompt | What was missing / wrong | What it fixed |
 |---|---|---|---|
-| 1 | _(initial prompt)_ | — | Initial generation |
+| 1 | _(initial prompt — v1 spec)_ | — | Initial generation (v1) |
+| 2 | _(initial prompt — v2 spec)_ | — | Fresh generation from updated user-role spec |
 
 **Total prompts to reach final state:** TBD — tracked during iteration phase
+
+---
+
+## Second Pass Results (v2 Spec)
+
+**MCP:** Still read-only. Same structural gap as v1 despite significant improvements to the spec — new sections on the facilitator's curation role, explicit discussion mode flow, keyboard shortcuts, merge dialog behavior. None of this translated to MCP tools. **This is the sharpest finding in the study:** a behavioral spec, no matter how detailed, doesn't trigger agent surface design because it describes what humans do, not what tools an agent needs. The v2 spec has ~3x more content than v1 but the MCP result is identical. Only 5 tools, lowest count of all experiments.
+
+**UI:** Similar to Exp 02 but slightly better — "definitely better visuals, more controls." More visually appealing. The v2 spec's explicit description of facilitator curation, the discussion flow, and the three-column board layout translated well into UI. Close to Exp 02 in quality, just a notch better overall.
+
+**Key finding:** Spec improvement plateau for MCP. Adding more behavioral detail to a role-based spec yields better UI but zero improvement on the agent surface. To unlock MCP quality, the spec type needs to change — not just grow.
+
+### v2 Score Adjustments
+| Dimension | v1 Score | v2 Score | Change | Notes |
+|---|---|---|---|---|
+| Completeness | 3 | 3.5 | ↑ | Better UI features; MCP still structurally incomplete |
+| Code Correctness | 3 | 3.5 | ↑ | Better visual quality; more controls present |
+| Architecture & Design | 4 | 4 | → | Still strong product thinking; slightly better layout |
+| MCP Quality | 1 | 1 | → | No change — still read-only; behavioral spec doesn't generate tool lists |
+| Skills Quality | 4.5 | 4 | ↓ | Lowest skill count (5) of all v2 experiments |
+| **Total** | **15.5** | **16** | ↑ | |
 
 ---
 

@@ -1,55 +1,30 @@
 # summarize-session
 
-Summarizes a Toil Tracker session in plain English: what the team does, how many activities were submitted, and a breakdown by automation potential.
-
-## When to use
-
-After a session's submission phase ends (status `reviewing` or `closed`), use this skill to give the facilitator a quick overview before the team discussion.
-
-## Inputs
-
-- `sessionId` — the session ID to summarize
+Summarize a Toil Tracker work audit session: total activities, effort distribution, energy breakdown, classification progress, and flagged priorities.
 
 ## Steps
 
-1. Call `get_session` with the provided `sessionId`.
-   - If the session is not found, stop and report the error.
+1. Ask the user for the **sessionId** if not already provided.
 
-2. Call `list_activities` with the same `sessionId` and no filter (to get all activities).
+2. Call `get_session` with the sessionId to retrieve the session metadata, participant list, and all activities.
 
-3. Compute counts:
-   - Total activities
-   - Automatable `yes` / `maybe` / `no`
-   - Flagged by facilitator
-   - Time estimate breakdown: `quick` / `medium` / `significant`
-   - Enjoyment breakdown: `yes` / `meh` / `no`
-   - Repetitive breakdown: `yes` / `sometimes` / `no`
+3. Call `list_activities` with no filters to get the full activity list including `effortHrsPerWk` for each.
 
-4. Identify the participants by name from the session data.
+4. Compute the following statistics:
+   - **Total activities**: count of all activities
+   - **Total participants**: count of unique participants
+   - **Total effort**: sum of `effortHrsPerWk` across all activities (round to 1 decimal)
+   - **Effort distribution**: count and sum of effort per `tpo` bucket (`<30m`, `30m-2h`, `half-day`, `day+`)
+   - **Energy breakdown**: count per energy level (`energizing`, `neutral`, `draining`)
+   - **Classification progress**: count of activities where `teamAuto !== 'unclassified'`, expressed as X/Total (Y%)
+   - **Flagged count**: count where `flaggedByFacilitator === true`
 
-5. Return a plain-English summary with the following sections:
+5. Return:
+   - A **plain-English paragraph** in this form:
+     > "The team submitted {total} activities totalling ~{totalEffort}h/wk across {participants} people. {Energy sentence: e.g. 'X activities were flagged as draining, making up Y% of total effort.'} {Classification sentence: e.g. 'Classification is X% complete with Y activities still unclassified.'}  {Flag sentence if any flagged.}"
+   - A **stats table** (Markdown) with the computed values.
 
-   **Session:** `<name>` — `<N>` participants, `<N>` activities, status `<status>`
+## Constraints
 
-   **Participants:** comma-separated list of names.
-
-   **Automation potential:**
-   - `<N>` activities could be automated (automatable = yes)
-   - `<N>` might be automatable (automatable = maybe)
-   - `<N>` are unlikely to be automated (automatable = no)
-
-   **Time burden:** `<N>` quick, `<N>` medium, `<N>` significant activities.
-
-   **Enjoyment:** `<N>` enjoyed, `<N>` neutral, `<N>` disliked.
-
-   **Repetitiveness:** `<N>` repetitive, `<N>` sometimes repetitive, `<N>` not repetitive.
-
-   **Flagged by facilitator:** `<N>` activities starred for discussion.
-
-   Keep the summary factual and under 200 words. Do not editorialize.
-
-## Example invocation
-
-```
-/summarize-session sessionId=abc123
-```
+- Do **not** set any flags or classifications — this is a read-only operation.
+- If no activities have been submitted yet, say so and suggest the facilitator wait for submissions.

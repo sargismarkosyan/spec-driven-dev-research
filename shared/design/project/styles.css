@@ -1,0 +1,346 @@
+/* Design tokens for Work Audit */
+
+:root {
+  /* Warm paper palette */
+  --paper: #f5f1e8;
+  --paper-deep: #ebe4d2;
+  --cream: #fbf8f1;
+  --card: #ffffff;
+  --ink: #1c1a16;
+  --ink-2: #3a342c;
+  --muted: #6b6356;
+  --muted-2: #8a8170;
+  --border: #e4dccb;
+  --border-soft: #efe8d8;
+  --rule: #d8d0bf;
+
+  /* Accents */
+  --rust: #b14d2f;
+  --rust-bg: #f5e3da;
+  --sage: #6b7d5a;
+  --sage-bg: #e6ead9;
+  --amber: #c8945f;
+  --amber-bg: #f5e7d3;
+  --slate: #4a5a6a;
+  --slate-bg: #dde3e8;
+  --flag: #c4502b;
+
+  /* Type */
+  --font-display: "Newsreader", "Source Serif Pro", Georgia, serif;
+  --font-body: "IBM Plex Sans", -apple-system, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* Reset within artboards */
+.wa-screen, .wa-screen * {
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv11";
+}
+
+.wa-screen {
+  width: 100%;
+  height: 100%;
+  background: var(--cream);
+  font-size: 14px;
+  line-height: 1.45;
+  overflow: hidden;
+  position: relative;
+}
+
+.wa-display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; }
+.wa-mono { font-family: var(--font-mono); }
+
+/* Eyebrow label */
+.wa-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Status dot */
+.wa-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sage);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.wa-dot.is-pulsing {
+  animation: wa-pulse 2s ease-in-out infinite;
+}
+@keyframes wa-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Chip */
+.wa-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  background: var(--paper);
+  color: var(--ink-2);
+  border: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
+.wa-chip.is-rust   { background: var(--rust-bg);  color: #6a2810; border-color: #e8c8b8; }
+.wa-chip.is-sage   { background: var(--sage-bg);  color: #3b4a2b; border-color: #c8d2b1; }
+.wa-chip.is-amber  { background: var(--amber-bg); color: #6f4318; border-color: #e8d2a8; }
+.wa-chip.is-slate  { background: var(--slate-bg); color: #2a3a4a; border-color: #b8c5d0; }
+.wa-chip.is-ghost  { background: transparent; border-color: transparent; color: var(--muted); }
+
+/* Card */
+.wa-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--cream);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+}
+.wa-btn.is-ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+.wa-btn.is-rust  { background: var(--rust); border-color: var(--rust); color: #fff; }
+
+.wa-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: #fff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+}
+.wa-input:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(28,26,22,0.06);
+}
+
+/* Field label */
+.wa-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* Segmented control */
+.wa-seg {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+}
+.wa-seg > button {
+  background: transparent;
+  border: 0;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  color: var(--ink-2);
+  cursor: pointer;
+  border-right: 1px solid var(--border-soft);
+  font-weight: 500;
+}
+.wa-seg > button:last-child { border-right: 0; }
+.wa-seg > button.is-on {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+/* Tiny divider */
+.wa-rule {
+  height: 1px;
+  background: var(--rule);
+  border: 0;
+  margin: 0;
+}
+
+/* Section heading rule */
+.wa-section-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Numbered list for spec */
+.wa-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted-2);
+  font-feature-settings: "tnum";
+}
+
+/* Avatar */
+.wa-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--paper-deep);
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+.wa-avatar.is-sm { width: 20px; height: 20px; font-size: 9px; }
+.wa-avatar.is-lg { width: 32px; height: 32px; font-size: 11px; }
+
+/* Activity card */
+.wa-activity {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+}
+.wa-activity-title {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+  line-height: 1.3;
+  margin: 0 0 8px 0;
+}
+.wa-activity .wa-chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Flagged accent border */
+.wa-flagged {
+  box-shadow: inset 3px 0 0 var(--flag);
+}
+
+/* Tab bar */
+.wa-tabs {
+  display: inline-flex;
+  gap: 0;
+  background: var(--paper);
+  border-radius: 4px;
+  padding: 3px;
+  border: 1px solid var(--border-soft);
+}
+.wa-tabs > button {
+  background: transparent;
+  border: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 3px;
+  font-weight: 500;
+}
+.wa-tabs > button.is-on {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* Topbar */
+.wa-topbar {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--cream);
+  gap: 16px;
+}
+.wa-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.wa-brand .wa-brandmark {
+  width: 22px; height: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--ink);
+  color: var(--cream);
+}
+
+/* Quadrant labels */
+.wa-quad-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  position: absolute;
+}
+
+/* Tiny ticker indicator */
+.wa-tick {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* Scroll containers in screens */
+.wa-scroll {
+  overflow: hidden;
+}
+
+/* For matrix dots */
+.wa-dot-activity {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--cream);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+.wa-dot-activity.is-rust { background: var(--rust); }
+.wa-dot-activity.is-sage { background: var(--sage); }
+.wa-dot-activity.is-amber { background: var(--amber); }
+.wa-dot-activity.is-slate { background: var(--slate); }

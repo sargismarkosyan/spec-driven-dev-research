@@ -5,8 +5,17 @@ import next from 'next';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { setupMCP } from './mcp';
-import state from './store';
-import type { Activity, Duration, Enjoyment, Repetitive, Automatable, Priority, Session } from './store';
+import state, {
+  Session,
+  Activity,
+  Participant,
+  ParticipantRole,
+  TimePerOccurrence,
+  Frequency,
+  EnergyLevel,
+  AutomatabilityVerdict,
+  DEFAULT_PROMPT_CATEGORIES,
+} from './store';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -15,14 +24,35 @@ const port = parseInt(process.env.PORT || '3030', 10);
 const nextApp = next({ dev, hostname, port });
 const handle = nextApp.getRequestHandler();
 
+// Initialized before httpServer.listen; safe to use in REST handlers.
+let io: Server;
+
+// Maps socket.id → { sessionId, participantId } for disconnect cleanup
+const socketMap = new Map<string, { sessionId: string; participantId: string }>();
+
+function serializeActivity(a: Activity) {
+  return { ...a, auditLog: a.auditLog };
+}
+
 function serializeSession(session: Session) {
+  const activeActivities = Array.from(session.activities.values()).filter(
+    (a) => !a.mergedInto
+  );
   return {
     id: session.id,
-    title: session.title,
-    status: session.status,
-    createdAt: session.createdAt,
+    name: session.name,
+    facilitatorId: session.facilitatorId,
+    facilitatorName: session.facilitatorName,
+    phase: session.phase,
+    submissionWindowMinutes: session.submissionWindowMinutes,
+    submissionStartedAt: session.submissionStartedAt,
+    showTeamFeedToEngineers: session.showTeamFeedToEngineers,
+    enabledPromptCategoryIds: session.enabledPromptCategoryIds,
     participants: Array.from(session.participants.values()),
-    activities: session.activities,
+    activities: activeActivities.map(serializeActivity),
+    discussionOrder: session.discussionOrder,
+    discussionIndex: session.discussionIndex,
+    createdAt: session.createdAt,
   };
 }
 
@@ -33,85 +63,271 @@ nextApp.prepare().then(() => {
 
   // ── REST API ───────────────────────────────────────────────────────────────
 
-  // Legacy canvas endpoint
-  app.get('/api/state', (_req, res) => {
-    res.json({ users: Array.from(state.users.values()), notes: state.notes });
-  });
-
-  // Sessions
+  // Create a session (facilitator action)
   app.post('/api/sessions', (req, res) => {
-    const { title } = req.body as { title?: string };
-    if (!title?.trim()) {
-      res.status(400).json({ error: 'title required' });
+    const {
+      name,
+      facilitatorName,
+      submissionWindowMinutes,
+      showTeamFeedToEngineers,
+      enabledPromptCategoryIds,
+    } = req.body;
+
+    if (!name || !facilitatorName) {
+      res.status(400).json({ error: 'name and facilitatorName required' });
       return;
     }
+
+    const id = crypto.randomUUID();
+    const facilitatorId = crypto.randomUUID();
+
     const session: Session = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      status: 'open',
+      id,
+      name,
+      facilitatorId,
+      facilitatorName,
+      phase: 'lobby',
+      submissionWindowMinutes: submissionWindowMinutes ?? null,
+      submissionStartedAt: null,
+      showTeamFeedToEngineers: showTeamFeedToEngineers ?? true,
+      enabledPromptCategoryIds:
+        enabledPromptCategoryIds ?? DEFAULT_PROMPT_CATEGORIES.map((c) => c.id),
       participants: new Map(),
-      activities: [],
+      activities: new Map(),
+      discussionOrder: [],
+      discussionIndex: 0,
       createdAt: new Date(),
     };
-    state.sessions.set(session.id, session);
-    res.json(serializeSession(session));
+
+    state.sessions.set(id, session);
+    res.json({ id, facilitatorId });
   });
 
+  // Get a session
   app.get('/api/sessions/:id', (req, res) => {
     const session = state.sessions.get(req.params.id);
-    if (!session) {
-      res.status(404).json({ error: 'session not found' });
-      return;
-    }
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
     res.json(serializeSession(session));
   });
 
-  app.patch('/api/sessions/:id/status', (req, res) => {
+  // Change session phase
+  app.patch('/api/sessions/:id/phase', (req, res) => {
     const session = state.sessions.get(req.params.id);
-    if (!session) {
-      res.status(404).json({ error: 'session not found' });
-      return;
-    }
-    const { status } = req.body as { status?: string };
-    if (!['open', 'reviewing', 'closed'].includes(status ?? '')) {
-      res.status(400).json({ error: 'invalid status' });
-      return;
-    }
-    session.status = status as Session['status'];
-    res.json(serializeSession(session));
-  });
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
 
-  app.patch('/api/sessions/:id/activities/:activityId', (req, res) => {
-    const session = state.sessions.get(req.params.id);
-    if (!session) {
-      res.status(404).json({ error: 'session not found' });
-      return;
+    const { facilitatorId, phase } = req.body;
+    if (session.facilitatorId !== facilitatorId) {
+      res.status(403).json({ error: 'Forbidden' }); return;
     }
-    const activity = session.activities.find(a => a.id === req.params.activityId);
-    if (!activity) {
-      res.status(404).json({ error: 'activity not found' });
-      return;
-    }
-    const body = req.body as { priority?: Priority; flagged?: boolean };
-    if (body.priority !== undefined) activity.priority = body.priority;
-    if (body.flagged !== undefined) activity.flagged = body.flagged;
-    res.json(activity);
-  });
 
-  app.get('/api/sessions/:id/export', (req, res) => {
-    const session = state.sessions.get(req.params.id);
-    if (!session) {
-      res.status(404).json({ error: 'session not found' });
-      return;
+    const validTransitions: Record<string, string[]> = {
+      lobby: ['submission'],
+      submission: ['discussion', 'closed'],
+      discussion: ['closed'],
+    };
+    if (!validTransitions[session.phase]?.includes(phase)) {
+      res.status(400).json({ error: `Cannot transition from ${session.phase} to ${phase}` }); return;
     }
-    const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-    const prioritized = session.activities
-      .filter(a => a.priority)
-      .sort((a, b) => (priorityOrder[a.priority!] ?? 3) - (priorityOrder[b.priority!] ?? 3));
-    res.json({
-      session: { id: session.id, title: session.title, status: session.status },
-      activities: prioritized,
+
+    session.phase = phase;
+
+    if (phase === 'submission') {
+      session.submissionStartedAt = new Date();
+    }
+
+    if (phase === 'discussion') {
+      // Build discussion order from all active activities, sorted by effort desc
+      session.discussionOrder = Array.from(session.activities.values())
+        .filter((a) => !a.mergedInto)
+        .sort((a, b) => {
+          const ea = a.energy === 'drains' ? 2 : a.energy === 'neutral' ? 1 : 0;
+          const eb = b.energy === 'drains' ? 2 : b.energy === 'neutral' ? 1 : 0;
+          return eb - ea;
+        })
+        .map((a) => a.id);
+      session.discussionIndex = 0;
+    }
+
+    io.to(session.id).emit('session:phase', {
+      phase,
+      discussionOrder: session.discussionOrder,
+      discussionIndex: session.discussionIndex,
+      submissionStartedAt: session.submissionStartedAt,
     });
+
+    res.json({ phase });
+  });
+
+  // Set discussion index
+  app.patch('/api/sessions/:id/discussion', (req, res) => {
+    const session = state.sessions.get(req.params.id);
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const { facilitatorId, index } = req.body;
+    if (session.facilitatorId !== facilitatorId) {
+      res.status(403).json({ error: 'Forbidden' }); return;
+    }
+
+    session.discussionIndex = Math.max(0, Math.min(index, session.discussionOrder.length - 1));
+    io.to(session.id).emit('discussion:advanced', { discussionIndex: session.discussionIndex });
+    res.json({ discussionIndex: session.discussionIndex });
+  });
+
+  // Facilitator: edit any activity
+  app.patch('/api/sessions/:id/activities/:actId', (req, res) => {
+    const session = state.sessions.get(req.params.id);
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const activity = session.activities.get(req.params.actId);
+    if (!activity) { res.status(404).json({ error: 'Activity not found' }); return; }
+
+    const { facilitatorId, editorName, updates } = req.body;
+    if (session.facilitatorId !== facilitatorId) {
+      res.status(403).json({ error: 'Forbidden' }); return;
+    }
+
+    const editableFields = ['title', 'timePerOccurrence', 'frequency', 'energy'] as const;
+    for (const field of editableFields) {
+      if (updates[field] !== undefined && updates[field] !== (activity as any)[field]) {
+        activity.auditLog.push({
+          timestamp: new Date(),
+          editorId: facilitatorId,
+          editorName: editorName || session.facilitatorName,
+          field,
+          from: String((activity as any)[field]),
+          to: String(updates[field]),
+        });
+        (activity as any)[field] = updates[field];
+      }
+    }
+
+    io.to(session.id).emit('activity:updated', serializeActivity(activity));
+    res.json(serializeActivity(activity));
+  });
+
+  // Facilitator: remove an activity
+  app.delete('/api/sessions/:id/activities/:actId', (req, res) => {
+    const session = state.sessions.get(req.params.id);
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const { facilitatorId } = req.body;
+    if (session.facilitatorId !== facilitatorId) {
+      res.status(403).json({ error: 'Forbidden' }); return;
+    }
+
+    session.activities.delete(req.params.actId);
+    io.to(session.id).emit('activity:removed', { activityId: req.params.actId });
+    res.json({ ok: true });
+  });
+
+  // Facilitator: merge two activities
+  app.post('/api/sessions/:id/activities/merge', (req, res) => {
+    const session = state.sessions.get(req.params.id);
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const { facilitatorId, sourceId, targetId } = req.body;
+    if (session.facilitatorId !== facilitatorId) {
+      res.status(403).json({ error: 'Forbidden' }); return;
+    }
+
+    const source = session.activities.get(sourceId);
+    const target = session.activities.get(targetId);
+    if (!source || !target) {
+      res.status(404).json({ error: 'Activity not found' }); return;
+    }
+
+    // Merge source into target: combine co-authors, mark source as merged
+    if (!target.coAuthors.find((a) => a.id === source.authorId)) {
+      target.coAuthors.push({ id: source.authorId, name: source.authorName });
+    }
+    for (const ca of source.coAuthors) {
+      if (!target.coAuthors.find((a) => a.id === ca.id)) {
+        target.coAuthors.push(ca);
+      }
+    }
+    target.mergedFrom.push(sourceId);
+    source.mergedInto = targetId;
+
+    target.auditLog.push({
+      timestamp: new Date(),
+      editorId: facilitatorId,
+      editorName: session.facilitatorName,
+      field: 'merge',
+      from: '',
+      to: `merged from "${source.title}" by ${source.authorName}`,
+    });
+
+    io.to(session.id).emit('activity:merged', {
+      sourceId,
+      target: serializeActivity(target),
+    });
+    res.json({ target: serializeActivity(target) });
+  });
+
+  // Facilitator: relate two activities (without merging)
+  app.post('/api/sessions/:id/activities/:actId/relate', (req, res) => {
+    const session = state.sessions.get(req.params.id);
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const { facilitatorId, relatedId } = req.body;
+    if (session.facilitatorId !== facilitatorId) {
+      res.status(403).json({ error: 'Forbidden' }); return;
+    }
+
+    const a = session.activities.get(req.params.actId);
+    const b = session.activities.get(relatedId);
+    if (!a || !b) { res.status(404).json({ error: 'Activity not found' }); return; }
+
+    if (!a.relatedTo.includes(relatedId)) a.relatedTo.push(relatedId);
+    if (!b.relatedTo.includes(req.params.actId)) b.relatedTo.push(req.params.actId);
+
+    io.to(session.id).emit('activity:updated', serializeActivity(a));
+    io.to(session.id).emit('activity:updated', serializeActivity(b));
+    res.json({ ok: true });
+  });
+
+  // Facilitator: set automatability verdict
+  app.patch('/api/sessions/:id/activities/:actId/verdict', (req, res) => {
+    const session = state.sessions.get(req.params.id);
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const activity = session.activities.get(req.params.actId);
+    if (!activity) { res.status(404).json({ error: 'Activity not found' }); return; }
+
+    const { facilitatorId, automatability, facilitatorNote } = req.body;
+    if (session.facilitatorId !== facilitatorId) {
+      res.status(403).json({ error: 'Forbidden' }); return;
+    }
+
+    activity.automatability = automatability ?? null;
+    if (facilitatorNote !== undefined) activity.facilitatorNote = facilitatorNote;
+    activity.discussedAt = new Date();
+
+    io.to(session.id).emit('activity:updated', serializeActivity(activity));
+    res.json(serializeActivity(activity));
+  });
+
+  // Facilitator: toggle flag
+  app.patch('/api/sessions/:id/activities/:actId/flag', (req, res) => {
+    const session = state.sessions.get(req.params.id);
+    if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
+
+    const activity = session.activities.get(req.params.actId);
+    if (!activity) { res.status(404).json({ error: 'Activity not found' }); return; }
+
+    const { facilitatorId } = req.body;
+    if (session.facilitatorId !== facilitatorId) {
+      res.status(403).json({ error: 'Forbidden' }); return;
+    }
+
+    activity.flagged = !activity.flagged;
+    io.to(session.id).emit('activity:updated', serializeActivity(activity));
+    res.json({ flagged: activity.flagged });
+  });
+
+  // Get prompt categories
+  app.get('/api/prompt-categories', (_req, res) => {
+    res.json(DEFAULT_PROMPT_CATEGORIES);
   });
 
   // ── MCP ────────────────────────────────────────────────────────────────────
@@ -128,123 +344,153 @@ nextApp.prepare().then(() => {
   // ── HTTP + Socket.io ───────────────────────────────────────────────────────
 
   const httpServer = createServer(app);
-  const io = new Server(httpServer, { cors: { origin: '*' } });
+  io = new Server(httpServer, { cors: { origin: '*' } });
 
   io.on('connection', (socket) => {
-    // ── Legacy canvas events ─────────────────────────────────────────────────
-    let canvasUser: { id: string; name: string } | null = null;
+    // Join or rejoin a session
+    socket.on(
+      'session:join',
+      (data: {
+        sessionId: string;
+        participantId: string;
+        name: string;
+        role: ParticipantRole;
+        isFacilitator?: boolean;
+      }) => {
+        const { sessionId, participantId, name, role, isFacilitator } = data;
+        const session = state.sessions.get(sessionId);
+        if (!session) {
+          socket.emit('error', { message: 'Session not found' });
+          return;
+        }
 
-    socket.on('join', (name: string) => {
-      const user = { id: socket.id, name, joinedAt: new Date() };
-      state.users.set(socket.id, user);
-      canvasUser = { id: socket.id, name };
-      socket.emit('state', { users: Array.from(state.users.values()), notes: state.notes });
-      socket.broadcast.emit('user:joined', user);
-    });
+        if (isFacilitator && participantId !== session.facilitatorId) {
+          socket.emit('error', { message: 'Invalid facilitator token' });
+          return;
+        }
 
-    socket.on('note:add', (text: string) => {
-      if (!canvasUser) return;
-      const note = {
-        id: crypto.randomUUID(),
-        authorId: canvasUser.id,
-        authorName: canvasUser.name,
-        text,
-        createdAt: new Date(),
-      };
-      state.notes.push(note);
-      io.emit('note:added', note);
-    });
+        let participant = session.participants.get(participantId);
+        if (!participant) {
+          participant = {
+            id: participantId,
+            socketId: socket.id,
+            name,
+            role: role || 'IC',
+            joinedAt: new Date(),
+            isOnline: true,
+          };
+          session.participants.set(participantId, participant);
+        } else {
+          participant.socketId = socket.id;
+          participant.isOnline = true;
+        }
 
-    // ── Session events ───────────────────────────────────────────────────────
-    let sessionCtx: { sessionId: string; participantId: string } | null = null;
+        socketMap.set(socket.id, { sessionId, participantId });
+        socket.join(sessionId);
 
-    socket.on('session:join', ({ sessionId, name }: { sessionId: string; name: string }) => {
-      const session = state.sessions.get(sessionId);
-      if (!session) {
-        socket.emit('session:error', 'session not found');
-        return;
+        socket.emit('session:state', serializeSession(session));
+        socket.to(sessionId).emit('participant:joined', participant);
       }
-      const participant = { id: socket.id, name, sessionId, joinedAt: new Date() };
-      session.participants.set(socket.id, participant);
-      sessionCtx = { sessionId, participantId: socket.id };
-      socket.join(sessionId);
-      socket.emit('session:state', serializeSession(session));
-      socket.to(sessionId).emit('session:participant:joined', { id: socket.id, name });
-    });
+    );
 
-    socket.on('session:facilitate', ({ sessionId }: { sessionId: string }) => {
-      const session = state.sessions.get(sessionId);
-      if (!session) {
-        socket.emit('session:error', 'session not found');
-        return;
+    // Engineer: add an activity
+    socket.on(
+      'activity:add',
+      (data: {
+        sessionId: string;
+        participantId: string;
+        title: string;
+        timePerOccurrence: TimePerOccurrence;
+        frequency: Frequency;
+        energy: EnergyLevel;
+      }) => {
+        const { sessionId, participantId, title, timePerOccurrence, frequency, energy } = data;
+        const session = state.sessions.get(sessionId);
+        if (!session || session.phase !== 'submission') return;
+
+        const participant = session.participants.get(participantId);
+        if (!participant) return;
+
+        const activity: Activity = {
+          id: crypto.randomUUID(),
+          sessionId,
+          authorId: participantId,
+          authorName: participant.name,
+          coAuthors: [],
+          title,
+          timePerOccurrence,
+          frequency,
+          energy,
+          automatability: null,
+          facilitatorNote: '',
+          flagged: false,
+          skipped: false,
+          mergedInto: null,
+          mergedFrom: [],
+          relatedTo: [],
+          auditLog: [],
+          createdAt: new Date(),
+          discussedAt: null,
+        };
+
+        session.activities.set(activity.id, activity);
+        io.to(sessionId).emit('activity:added', serializeActivity(activity));
       }
-      socket.join(sessionId);
-      socket.emit('session:state', serializeSession(session));
-    });
+    );
 
-    socket.on('activity:add', (payload: {
-      sessionId: string;
-      title: string;
-      duration: Duration;
-      enjoyment: Enjoyment;
-      repetitive: Repetitive;
-      automatable: Automatable;
-    }) => {
-      const session = state.sessions.get(payload.sessionId);
-      if (!session) return;
-      const participant = session.participants.get(socket.id);
-      if (!participant) return;
+    // Engineer: edit own activity
+    socket.on(
+      'activity:edit',
+      (data: {
+        sessionId: string;
+        participantId: string;
+        activityId: string;
+        updates: Partial<Pick<Activity, 'title' | 'timePerOccurrence' | 'frequency' | 'energy'>>;
+      }) => {
+        const { sessionId, participantId, activityId, updates } = data;
+        const session = state.sessions.get(sessionId);
+        if (!session || session.phase !== 'submission') return;
 
-      const activity: Activity = {
-        id: crypto.randomUUID(),
-        sessionId: payload.sessionId,
-        authorId: socket.id,
-        authorName: participant.name,
-        title: payload.title.trim(),
-        duration: payload.duration,
-        enjoyment: payload.enjoyment,
-        repetitive: payload.repetitive,
-        automatable: payload.automatable,
-        flagged: false,
-        createdAt: new Date(),
-      };
-      session.activities.push(activity);
-      io.to(payload.sessionId).emit('activity:added', activity);
-    });
+        const activity = session.activities.get(activityId);
+        if (!activity || activity.authorId !== participantId) return;
 
-    socket.on('activity:update', (payload: {
-      sessionId: string;
-      activityId: string;
-      priority?: Priority;
-      flagged?: boolean;
-    }) => {
-      const session = state.sessions.get(payload.sessionId);
-      if (!session) return;
-      const activity = session.activities.find(a => a.id === payload.activityId);
-      if (!activity) return;
-      if (payload.priority !== undefined) activity.priority = payload.priority;
-      if (payload.flagged !== undefined) activity.flagged = payload.flagged;
-      io.to(payload.sessionId).emit('activity:updated', activity);
-    });
+        if (updates.title !== undefined) activity.title = updates.title;
+        if (updates.timePerOccurrence !== undefined) activity.timePerOccurrence = updates.timePerOccurrence;
+        if (updates.frequency !== undefined) activity.frequency = updates.frequency;
+        if (updates.energy !== undefined) activity.energy = updates.energy;
 
-    socket.on('session:set_status', (payload: { sessionId: string; status: Session['status'] }) => {
-      const session = state.sessions.get(payload.sessionId);
-      if (!session) return;
-      session.status = payload.status;
-      io.to(payload.sessionId).emit('session:updated', { status: payload.status });
-    });
+        io.to(sessionId).emit('activity:updated', serializeActivity(activity));
+      }
+    );
+
+    // Engineer: delete own activity
+    socket.on(
+      'activity:delete',
+      (data: { sessionId: string; participantId: string; activityId: string }) => {
+        const { sessionId, participantId, activityId } = data;
+        const session = state.sessions.get(sessionId);
+        if (!session || session.phase !== 'submission') return;
+
+        const activity = session.activities.get(activityId);
+        if (!activity || activity.authorId !== participantId) return;
+
+        session.activities.delete(activityId);
+        io.to(sessionId).emit('activity:removed', { activityId });
+      }
+    );
 
     socket.on('disconnect', () => {
-      if (canvasUser) {
-        state.users.delete(canvasUser.id);
-        io.emit('user:left', canvasUser.id);
-      }
-      if (sessionCtx) {
-        const session = state.sessions.get(sessionCtx.sessionId);
-        if (session) {
-          session.participants.delete(sessionCtx.participantId);
-          io.to(sessionCtx.sessionId).emit('session:participant:left', sessionCtx.participantId);
-        }
+      const info = socketMap.get(socket.id);
+      if (!info) return;
+      socketMap.delete(socket.id);
+
+      const session = state.sessions.get(info.sessionId);
+      if (!session) return;
+
+      const participant = session.participants.get(info.participantId);
+      if (participant) {
+        participant.isOnline = false;
+        io.to(info.sessionId).emit('participant:left', { participantId: info.participantId });
       }
     });
   });
