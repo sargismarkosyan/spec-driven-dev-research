@@ -8,6 +8,7 @@ import { setupMCP } from './mcp';
 import sessions, {
   Session, Activity, Participant,
   AVATAR_COLORS, makeInitials, mergeSimilarity, effortHrsPerWk,
+  TPO_HOURS, FREQ_PER_WK,
   Role, TimePerOccurrence, Frequency, Energy,
 } from './store';
 
@@ -39,51 +40,71 @@ function pickColor(session: Session): string {
 }
 
 function buildMarkdownExport(session: Session): string {
-  const acts = Array.from(session.activities.values());
-  const flagged = acts.filter(a => a.flagged);
-  const byVerdict = {
-    yes:   acts.filter(a => a.teamAuto === 'yes'),
-    maybe: acts.filter(a => a.teamAuto === 'maybe'),
-    no:    acts.filter(a => a.teamAuto === 'no'),
-    unclassified: acts.filter(a => a.teamAuto === 'unclassified'),
+  const ENERGY_COST: Record<string, number> = {
+    draining: 2.0, tedious: 1.5, fine: 1.0, energizing: 0.5,
   };
 
-  const fmtAct = (a: Activity, i?: number) => {
-    const prefix = i != null ? `${i + 1}. ` : '- ';
-    const lines = [
-      `${prefix}**${a.title}** — ${a.participantName}${a.reportedBy?.length ? ` + ${a.reportedBy.join(', ')}` : ''}`,
-      `   - Time: ${tpoLabel(a.tpo)} · Cadence: ${a.freq} · Energy: ${a.energy}`,
-      `   - Team verdict: ${a.teamAuto}`,
+  const perceivedCost = (a: Activity): number =>
+    TPO_HOURS[a.tpo as TimePerOccurrence] *
+    FREQ_PER_WK[a.freq as Frequency] *
+    (ENERGY_COST[a.energy] ?? 1.0);
+
+  // Sort: flagged first within group, then by perceived cost descending
+  const sortSection = (arr: Activity[]): Activity[] => [
+    ...arr.filter(a => a.flagged).sort((a, b) => perceivedCost(b) - perceivedCost(a)),
+    ...arr.filter(a => !a.flagged).sort((a, b) => perceivedCost(b) - perceivedCost(a)),
+  ];
+
+  const acts = Array.from(session.activities.values());
+  const automatable = sortSection(acts.filter(a => a.teamAuto === 'yes'));
+  const investigate  = sortSection(acts.filter(a => a.teamAuto === 'maybe'));
+  const manual       = acts.filter(a => a.teamAuto === 'no');
+
+  const recoverableHrs = [...automatable, ...investigate]
+    .reduce((sum, a) => sum + perceivedCost(a), 0);
+
+  const date = new Date().toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  const fmtActivity = (a: Activity, rank: number): string => {
+    const cost = perceivedCost(a).toFixed(1);
+    const lines: string[] = [
+      `### ${rank}. ${a.title}`,
+      `- **Who:** ${a.participantName}`,
+      `- **Effort:** ${tpoLabel(a.tpo)} · ${a.freq} · ~${cost} perceived h/wk`,
+      `- **Energy:** ${a.energy}`,
     ];
-    if (a.discussionNote) lines.push(`   - Note: ${a.discussionNote}`);
+    if (a.discussionNote) lines.push(`- **Note:** ${a.discussionNote}`);
+    if (a.flagged) lines.push(`- ⭐ **Flagged priority**`);
     return lines.join('\n');
   };
 
+  const renderSection = (items: Activity[]): string[] =>
+    items.length === 0
+      ? ['_None_', '']
+      : items.flatMap((a, i) => [fmtActivity(a, i + 1), '']);
+
   const lines: string[] = [
-    `# Work Audit · ${session.name}`,
-    `Facilitator: ${session.facilitatorName} · ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} · ${session.participants.size} participants · ${acts.length} activities`,
+    `# Work Audit — ${session.name}`,
+    date,
     '',
-    `## ★ Flagged priorities (${flagged.length})`,
+    `**${automatable.length} to automate · ${investigate.length} to investigate · ${manual.length} manual**`,
+    `Estimated ~${recoverableHrs.toFixed(1)} perceived h/wk recoverable.`,
     '',
-    ...flagged.map(fmtAct),
+    `## 🔧 Automate — act now`,
     '',
-    `## All ${acts.length} activities by team verdict`,
+    ...renderSection(automatable),
+    `## 🔍 Investigate — research spike needed`,
     '',
-    `### Automatable (${byVerdict.yes.length})`,
-    ...byVerdict.yes.map(a => fmtAct(a)),
+    ...renderSection(investigate),
+    `## ✓ Manual — acknowledged, no action this quarter`,
     '',
-    `### Maybe (${byVerdict.maybe.length})`,
-    ...byVerdict.maybe.map(a => fmtAct(a)),
-    '',
-    `### Manual forever (${byVerdict.no.length})`,
-    ...byVerdict.no.map(a => fmtAct(a)),
-    '',
-    `### Unclassified (${byVerdict.unclassified.length})`,
-    ...byVerdict.unclassified.map(a => fmtAct(a)),
-    '',
+    ...renderSection(manual),
     '---',
     '_Automatability was tagged during the discussion phase — team consensus, not self-report._',
   ];
+
   return lines.join('\n');
 }
 

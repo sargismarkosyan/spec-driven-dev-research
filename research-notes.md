@@ -154,3 +154,31 @@ Sources: [arXiv 2507.16044](https://arxiv.org/abs/2507.16044) · [Zuplo one-year
 **Anthropic's Claude Skills system** (announced October 2025, open standard December 2025): A skill is a directory with a `SKILL.md` file (YAML frontmatter + Markdown instructions). Progressive disclosure: metadata costs ~100 tokens at startup; full body (~5,000 tokens) loads only when relevant. Framing: skills teach agents *how* to use tools; MCP provides tool *connectivity*.
 
 Sources: [arXiv 2305.16291](https://arxiv.org/abs/2305.16291) · [arXiv 2602.20867](https://arxiv.org/html/2602.20867v1) · [Anthropic Engineering blog (Oct 2025)](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills)
+
+---
+
+## Open Research Questions
+
+### Q1 — Greenfield threshold: how robust must a spec be to build an application from scratch?
+
+When the codebase doesn't exist yet, the spec is the only source of truth the AI has. The question is: what is the minimum spec quality that reliably produces a full, working application?
+
+**What to investigate:**
+- At which of the four experiment tiers (problem statement → PM requirements → user role based → technical PRD) does output quality cross an acceptable threshold for all four surfaces (UI, API, MCP, skills)?
+- Are some surfaces more sensitive to spec completeness than others? (Hypothesis: MCP tool design and skills may degrade earlier than the UI, since they require clearer domain modeling.)
+- Is there a floor below which the AI makes decisions that are hard to reverse — data model choices, auth approach, session semantics — that later constrain the whole codebase?
+
+**Practical output:** a minimum spec profile for greenfield AI builds — what categories of information must be present, and which can be omitted without significant quality loss.
+
+---
+
+### Q2 — Integration threshold: how minimal can a spec be when an existing codebase is present?
+
+When a codebase already exists, the code itself carries implicit specification: data models, API contracts, naming conventions, interaction patterns. The AI can read the code and infer intent. This changes the question from "is the spec complete enough to build?" to "is the spec complete enough to *navigate and extend* what's already there?"
+
+**What to investigate:**
+- With codebase + minimal spec, which spec types from Q1 become sufficient that were insufficient for greenfield? (Hypothesis: a problem statement or PM-level spec may be enough to drive effective iteration when the codebase is readable.)
+- What is the spec doing in the integration case — is it signaling *intent* (what to build next) vs. *context* (what the system is)? The codebase covers context; the spec only needs to cover intent.
+- Where does minimal-spec iteration break down? Candidates: cross-cutting changes (refactors, auth changes, schema migrations), new surfaces (adding MCP when only a UI existed), features with no existing analog in the codebase.
+
+**Practical output:** a minimum spec profile for AI-assisted iteration — and a decision rule for when a spec needs to be upgraded to greenfield quality (i.e., when the existing codebase stops being a reliable substitute for missing spec).

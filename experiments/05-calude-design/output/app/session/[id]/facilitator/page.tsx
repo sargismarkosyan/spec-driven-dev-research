@@ -831,16 +831,20 @@ function GroupedView({ activities, onEdit, onMerge, onRemove }: {
   const [sortKey, setSortKey] = useState<'effort' | 'energy' | 'person'>('effort');
   const [showUnclassified, setShowUnclassified] = useState(true);
 
+  // Perceived cost = clock hours × energy multiplier (same formula as DiscussView).
+  const ENERGY_COST: Record<string, number> = { draining: 2.0, tedious: 1.5, fine: 1.0, energizing: 0.5 };
+  const perceivedCost = (a: Activity) => calcEffort(a.tpo, a.freq).hrs * (ENERGY_COST[a.energy] ?? 1.0);
+
   const groups = {
-    yes:   { title: 'Automatable',    hint: 'Team agreed: yes', tone: 'rust',  items: activities.filter(a => a.teamAuto === 'yes') },
-    maybe: { title: 'Maybe',          hint: 'Team agreed: maybe', tone: 'amber', items: activities.filter(a => a.teamAuto === 'maybe') },
-    no:    { title: 'Manual forever', hint: 'Team agreed: manual', tone: 'slate', items: activities.filter(a => a.teamAuto === 'no') },
+    yes:   { title: 'Automatable', hint: 'Team agreed: yes · → Build the automation', tone: 'rust',  items: activities.filter(a => a.teamAuto === 'yes') },
+    maybe: { title: 'Maybe',       hint: 'Team agreed: maybe · → Research spike needed', tone: 'amber', items: activities.filter(a => a.teamAuto === 'maybe') },
+    no:    { title: 'Manual',      hint: 'Team agreed: no · acknowledged, no action this quarter', tone: 'slate', items: activities.filter(a => a.teamAuto === 'no') },
   };
   const unclassified = activities.filter(a => a.teamAuto === 'unclassified');
 
   const sortFn = (a: Activity, b: Activity) =>
-    sortKey === 'effort' ? calcEffort(b.tpo, b.freq).hrs - calcEffort(a.tpo, a.freq).hrs
-    : sortKey === 'energy' ? (['draining','neutral','energizing'].indexOf(b.energy) - ['draining','neutral','energizing'].indexOf(a.energy))
+    sortKey === 'effort' ? perceivedCost(b) - perceivedCost(a)
+    : sortKey === 'energy' ? (['draining','tedious','fine','energizing'].indexOf(a.energy) - ['draining','tedious','fine','energizing'].indexOf(b.energy))
     : a.participantName.localeCompare(b.participantName);
 
   Object.values(groups).forEach(g => g.items.sort(sortFn));
@@ -851,7 +855,7 @@ function GroupedView({ activities, onEdit, onMerge, onRemove }: {
         <div>
           <Eyebrow>Grouped by team verdict on automatability</Eyebrow>
           <h2 className="wa-display" style={{ fontSize: 22, margin: '4px 0 0', fontWeight: 500 }}>
-            Three columns. Most-painful on top of each.
+            Automation backlog · act on these in order.
           </h2>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -866,23 +870,32 @@ function GroupedView({ activities, onEdit, onMerge, onRemove }: {
 
       {/* Three classified columns */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18, flex: unclassified.length > 0 ? '0 0 auto' : 1, overflow: unclassified.length > 0 ? 'visible' : 'hidden', maxHeight: unclassified.length > 0 ? '55%' : undefined }}>
-        {Object.entries(groups).map(([key, g]) => (
-          <div key={key} style={{
-            background: key === 'yes' ? 'var(--rust-bg)' : key === 'maybe' ? 'var(--amber-bg)' : 'var(--paper-deep)',
-            border: '1px solid var(--border-soft)', borderRadius: 6, padding: 16,
-            display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span className="wa-mono" style={{ fontSize: 20, fontWeight: 600, color: `var(--${g.tone})` }}>{g.items.length}</span>
-              <h3 className="wa-display" style={{ fontSize: 18, margin: 0, fontWeight: 500 }}>{g.title}</h3>
+        {Object.entries(groups).map(([key, g]) => {
+          const isManual = key === 'no';
+          return (
+            <div key={key} style={{
+              background: key === 'yes' ? 'var(--rust-bg)' : key === 'maybe' ? 'var(--amber-bg)' : 'var(--paper)',
+              border: `1px solid ${isManual ? 'var(--rule)' : 'var(--border-soft)'}`,
+              borderRadius: 6, padding: 16,
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              opacity: isManual ? 0.72 : 1,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span className="wa-mono" style={{ fontSize: 20, fontWeight: 600, color: isManual ? 'var(--muted-2)' : `var(--${g.tone})` }}>{g.items.length}</span>
+                <h3 className="wa-display" style={{ fontSize: 18, margin: 0, fontWeight: 500, color: isManual ? 'var(--muted)' : undefined }}>
+                  {isManual ? 'Manual · no action needed' : g.title}
+                </h3>
+              </div>
+              <p style={{ fontSize: 11.5, color: isManual ? 'var(--muted-2)' : 'var(--ink-2)', marginBottom: 14 }}>{g.hint}</p>
+              <div style={{ display: 'grid', gap: 6, overflowY: 'auto', paddingRight: 4 }}>
+                {g.items.length === 0 && <div style={{ fontSize: 12, color: 'var(--muted-2)', fontStyle: 'italic' }}>None yet.</div>}
+                {g.items.map((a, idx) => (
+                  <GroupedCard key={a.id} a={a} rank={isManual ? undefined : idx + 1} onEdit={onEdit} onMerge={onMerge} onRemove={onRemove} />
+                ))}
+              </div>
             </div>
-            <p style={{ fontSize: 11.5, color: 'var(--ink-2)', marginBottom: 14 }}>{g.hint}</p>
-            <div style={{ display: 'grid', gap: 6, overflowY: 'auto', paddingRight: 4 }}>
-              {g.items.length === 0 && <div style={{ fontSize: 12, color: 'var(--muted-2)', fontStyle: 'italic' }}>None yet.</div>}
-              {g.items.map(a => <GroupedCard key={a.id} a={a} onEdit={onEdit} onMerge={onMerge} onRemove={onRemove} />)}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Unclassified section — shown until classification begins */}
@@ -931,15 +944,25 @@ function GroupedView({ activities, onEdit, onMerge, onRemove }: {
   );
 }
 
-function GroupedCard({ a, onEdit, onMerge, onRemove }: {
+function GroupedCard({ a, rank, onEdit, onMerge, onRemove }: {
   a: Activity;
+  rank?: number;
   onEdit: (a: Activity) => void;
   onMerge: (a: Activity) => void;
   onRemove: (id: string) => void;
 }) {
   return (
-    <div className={`wa-activity${a.flagged ? ' wa-flagged' : ''}`} style={{ padding: '10px 12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+    <div className={`wa-activity${a.flagged ? ' wa-flagged' : ''}`} style={{ padding: '10px 12px', position: 'relative' }}>
+      {rank !== undefined && (
+        <span className="wa-mono" style={{
+          position: 'absolute', top: 8, left: 10,
+          fontSize: 9, fontWeight: 700, color: 'var(--muted-2)',
+          letterSpacing: '0.04em', lineHeight: 1,
+        }}>
+          {String(rank).padStart(2, '0')}
+        </span>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, paddingLeft: rank !== undefined ? 18 : 0 }}>
         <span className="wa-avatar is-sm" style={{ background: a.participantColor, color: '#fff' }}>{a.participantInitials}</span>
         <span style={{ fontSize: 11, color: 'var(--muted)' }}>{a.participantName.split(' ')[0]}</span>
         <EffortPill tpo={a.tpo} freq={a.freq} size="sm" />
@@ -987,11 +1010,11 @@ function DiscussView({
   const [localNote, setLocalNote] = useState('');
   const [skippedIds, setSkippedIds] = useState<string[]>([]);
 
-  // Sort pending by urgency: draining > tedious > fine > energizing, then by h/wk desc
-  // This puts the highest-pain, highest-effort items at the front of the queue automatically.
-  const ENERGY_URGENCY: Record<Energy, number> = { draining: 4, tedious: 3, fine: 2, energizing: 1 };
+  // Perceived cost = clock hours × energy multiplier.
+  // Draining work costs twice what it looks like; energizing work costs half.
+  const ENERGY_COST: Record<Energy, number> = { draining: 2.0, tedious: 1.5, fine: 1.0, energizing: 0.5 };
   const priorityScore = (a: Activity) =>
-    ENERGY_URGENCY[a.energy] * 10 + calcEffort(a.tpo, a.freq).hrs;
+    calcEffort(a.tpo, a.freq).hrs * ENERGY_COST[a.energy];
 
   const sortedPending = [...pending].sort((a, b) => priorityScore(b) - priorityScore(a));
 
@@ -1020,9 +1043,9 @@ function DiscussView({
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
 
-      if (e.key === 'j' || e.key === 'ArrowRight') {
+      if (e.key === 'k' || e.key === 'ArrowRight') {
         onSelectIdx(Math.min(orderedPending.length - 1, discussIdx + 1));
-      } else if (e.key === 'k' || e.key === 'ArrowLeft') {
+      } else if (e.key === 'j' || e.key === 'ArrowLeft') {
         onSelectIdx(Math.max(0, discussIdx - 1));
       } else if (e.key === '1' && foc) {
         onClassify(foc.id, 'yes');
@@ -1184,11 +1207,8 @@ function DiscussView({
         {foc ? (
           <>
             <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--border-soft)' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ marginBottom: 4 }}>
                 <Eyebrow color="var(--rust)">↳ Now reviewing · {discussIdx + 1} / {pending.length + classified.length}</Eyebrow>
-                <span className="wa-mono" style={{ fontSize: 9, color: 'var(--muted-2)', letterSpacing: '0.04em' }}>
-                  ← k &nbsp; j → &nbsp;&nbsp; 1/2/3 classify &nbsp;&nbsp; f flag &nbsp;&nbsp; s skip
-                </span>
               </div>
               <h3 className="wa-display" style={{ fontSize: 18, margin: '6px 0 10px', fontWeight: 500, lineHeight: 1.25 }}>{foc.title}</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -1285,7 +1305,11 @@ function DiscussView({
             </div>
 
             {/* Nav buttons */}
-            <div style={{ padding: 14, borderTop: '1px solid var(--border-soft)', display: 'flex', gap: 8 }}>
+            <div style={{ padding: '8px 14px 14px', borderTop: '1px solid var(--border-soft)' }}>
+              <div className="wa-mono" style={{ fontSize: 9, color: 'var(--muted-2)', letterSpacing: '0.04em', textAlign: 'center', marginBottom: 8 }}>
+                ← j &nbsp; k → &nbsp;&nbsp; 1/2/3 classify &nbsp;&nbsp; f flag &nbsp;&nbsp; s skip
+              </div>
+            <div style={{ display: 'flex', gap: 8 }}>
               <button className="wa-btn is-ghost" style={{ flex: 1, justifyContent: 'center', padding: '8px', fontSize: 12 }}
                 onClick={() => onSelectIdx(Math.max(0, discussIdx - 1))}>← Prev</button>
               <button
@@ -1299,6 +1323,7 @@ function DiscussView({
               </button>
               <button className="wa-btn" style={{ flex: 2, justifyContent: 'center', padding: '8px', fontSize: 12 }}
                 onClick={() => onSelectIdx(Math.min(orderedPending.length - 1, discussIdx + 1))}>Next →</button>
+            </div>
             </div>
           </>
         ) : (
