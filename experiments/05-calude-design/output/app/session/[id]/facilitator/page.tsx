@@ -70,7 +70,7 @@ export default function FacilitatorView({ params }: { params: { id: string } }) 
   const [editTitle, setEditTitle]       = useState('');
   const [editTpo, setEditTpo]           = useState<TimePerOccurrence>('30m-2h');
   const [editFreq, setEditFreq]         = useState<Frequency>('weekly');
-  const [editEnergy, setEditEnergy]     = useState<Energy>('neutral');
+  const [editEnergy, setEditEnergy]     = useState<Energy>('fine');
   const [editVerdict, setEditVerdict]   = useState<AutoVerdict>('unclassified');
   const [editNote, setEditNote]         = useState('');
   const [showExport, setShowExport]     = useState(false);

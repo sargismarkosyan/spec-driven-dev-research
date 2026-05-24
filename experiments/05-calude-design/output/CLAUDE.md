@@ -26,7 +26,7 @@ Next.js (custom server) + Express + Socket.io + `@modelcontextprotocol/sdk`, all
 Engineers submit activities tagged with:
 - **Time per occurrence**: `<30m | 30m-2h | half-day | day+`
 - **Frequency**: `daily | weekly | monthly | quarterly | adhoc`
-- **Energy**: `energizing | neutral | draining`
+- **Energy**: `energizing | fine | tedious | draining` (note: design mocks used `neutral` — the wire value is `fine`)
 
 Automatability (`yes | maybe | no | unclassified`) is **NOT** asked of engineers — it's team-classified during facilitator discussion.
 
