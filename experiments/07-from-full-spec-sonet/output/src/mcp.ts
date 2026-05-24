@@ -1,31 +1,112 @@
 import type { Express, Request, Response } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { z } from 'zod';
+import sessions from './store';
 
-// Build a fresh server instance per request (stateless mode).
-// For stateful sessions add a session map and sessionIdGenerator.
 const buildServer = () => {
-  const server = new McpServer({
-    name: 'toil-tracker',
-    version: '0.1.0',
-  });
+  const server = new McpServer({ name: 'work-audit', version: '0.3.0' });
 
-  // ── Tools ──────────────────────────────────────────────────────────────────
-  // Placeholder — replace with domain tools when extending the starter.
+  server.tool('list_sessions', 'List all active Work Audit sessions.', {}, async () => ({
+    content: [{
+      type: 'text' as const,
+      text: JSON.stringify(
+        Array.from(sessions.values()).map(s => ({
+          id: s.id,
+          name: s.name,
+          status: s.status,
+          participants: s.participants.size,
+          activities: s.activities.size,
+        })),
+        null, 2
+      ),
+    }],
+  }));
 
   server.tool(
-    'get_status',
-    'Returns the current status of the Toil Tracker server.',
-    {},
-    async () => ({
-      content: [{ type: 'text', text: 'Toil Tracker MCP server is running.' }],
-    })
+    'get_session',
+    'Get full state of a Work Audit session, including all activities.',
+    { sessionId: z.string().describe('Session ID') },
+    async ({ sessionId }) => {
+      const session = sessions.get(sessionId);
+      if (!session) return { content: [{ type: 'text' as const, text: 'Session not found.' }] };
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify({
+            ...session,
+            participants: Array.from(session.participants.values()),
+            activities: Array.from(session.activities.values()),
+          }, null, 2),
+        }],
+      };
+    }
   );
 
-  // Add domain tools here:
-  // server.tool('create_session', ...)
-  // server.tool('add_activity', ...)
-  // server.tool('list_activities', ...)
+  server.tool(
+    'export_session_markdown',
+    'Export a Work Audit session as a Markdown priority report.',
+    { sessionId: z.string().describe('Session ID') },
+    async ({ sessionId }) => {
+      const session = sessions.get(sessionId);
+      if (!session) return { content: [{ type: 'text' as const, text: 'Session not found.' }] };
+
+      const acts = Array.from(session.activities.values());
+      const flagged = acts.filter(a => a.flagged);
+      const auto = acts.filter(a => a.teamAuto === 'yes');
+      const maybe = acts.filter(a => a.teamAuto === 'maybe');
+      const manual = acts.filter(a => a.teamAuto === 'no');
+      const unclassed = acts.filter(a => a.teamAuto === 'unclassified');
+
+      const fmtAct = (a: typeof acts[0]) =>
+        `- **${a.title}** — ${a.participantName} · ${a.tpo} · ${a.freq} · ${a.energy}${a.flagged ? ' ★' : ''}${a.discussionNote ? `\n  _${a.discussionNote}_` : ''}`;
+
+      const md = [
+        `# Work Audit · ${session.name}`,
+        `Facilitator: ${session.facilitatorName} · ${acts.length} activities · ${session.participants.size} participants`,
+        '',
+        `## ★ Flagged priorities (${flagged.length})`,
+        ...flagged.map(fmtAct),
+        '',
+        `## Automatable (${auto.length})`,
+        ...auto.map(fmtAct),
+        '',
+        `## Maybe automatable (${maybe.length})`,
+        ...maybe.map(fmtAct),
+        '',
+        `## Manual forever (${manual.length})`,
+        ...manual.map(fmtAct),
+        '',
+        `## Unclassified (${unclassed.length})`,
+        ...unclassed.map(fmtAct),
+        '',
+        '---',
+        '_Automatability classified by team during discussion — not self-report._',
+      ].join('\n');
+
+      return { content: [{ type: 'text' as const, text: md }] };
+    }
+  );
+
+  server.tool(
+    'list_activities',
+    'List activities from a session, optionally filtered.',
+    {
+      sessionId: z.string().describe('The session to query'),
+      filter: z.enum(['all', 'flagged', 'automatable', 'draining']).optional().describe('Filter: all, flagged, automatable, or draining'),
+    },
+    async ({ sessionId, filter = 'all' }) => {
+      const session = sessions.get(sessionId);
+      if (!session) return { content: [{ type: 'text' as const, text: 'Session not found.' }] };
+
+      let acts = Array.from(session.activities.values());
+      if (filter === 'flagged') acts = acts.filter(a => a.flagged);
+      if (filter === 'automatable') acts = acts.filter(a => a.teamAuto === 'yes');
+      if (filter === 'draining') acts = acts.filter(a => a.energy === 'draining');
+
+      return { content: [{ type: 'text' as const, text: JSON.stringify(acts, null, 2) }] };
+    }
+  );
 
   return server;
 };
