@@ -1,4 +1,17 @@
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
-// Connects to the same origin — no separate backend URL needed.
-export const socket = io({ autoConnect: false });
+let socket: Socket | null = null;
+
+export function getSocket(): Socket {
+  if (!socket) {
+    socket = io({ autoConnect: false });
+  }
+  return socket;
+}
+
+export function resetSocket() {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+}

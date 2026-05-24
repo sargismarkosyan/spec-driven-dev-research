@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { socket } from '@/lib/socket';
+import { getSocket } from '@/lib/socket';
+
+const socket = getSocket();
 
 type User = { id: string; name: string };
 type Note = { id: string; authorName: string; text: string };
