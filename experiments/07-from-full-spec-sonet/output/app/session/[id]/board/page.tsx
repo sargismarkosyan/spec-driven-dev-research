@@ -123,8 +123,11 @@ export default function EngineerBoard() {
     socket.on('activity:deleted', ({ id: aid }: { id: string }) => {
       setActivities(prev => prev.filter(x => x.id !== aid));
     });
-    socket.on('activity:merged', ({ merged, removedId }: { merged: Activity; removedId: string }) => {
-      setActivities(prev => [...prev.filter(x => x.id !== removedId && x.id !== merged.id), merged]);
+    socket.on('activity:merged', ({ newActivity, updatedSources }: { newActivity: Activity; updatedSources: Activity[] }) => {
+      setActivities(prev => {
+        const sourceIds = new Set(updatedSources.map(s => s.id));
+        return [...prev.filter(x => !sourceIds.has(x.id)), ...updatedSources, newActivity];
+      });
     });
     socket.on('participant:joined', (p: Participant) => {
       setParticipants(prev => [...prev.filter(x => x.id !== p.id), p]);

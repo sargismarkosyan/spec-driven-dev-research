@@ -78,7 +78,7 @@ export default function LobbyPage() {
 
     const socket = getSocket();
     socket.connect();
-    socket.emit('join-session', { sessionId: id, token });
+    socket.emit('join-session', { sessionId: id, name: 'Facilitator', isFacilitator: true, token });
 
     socket.on('participant:joined', (participant: ParticipantEx) => {
       if (participant.isFacilitator) return;
@@ -88,8 +88,8 @@ export default function LobbyPage() {
       });
     });
 
-    socket.on('participant:left', ({ participantId }: { participantId: string }) => {
-      setParticipants(prev => prev.filter(p => p.id !== participantId));
+    socket.on('participant:left', ({ id: leftId }: { id: string }) => {
+      setParticipants(prev => prev.filter(p => p.id !== leftId));
     });
 
     socket.on('session:status', ({ status }: { status: string }) => {

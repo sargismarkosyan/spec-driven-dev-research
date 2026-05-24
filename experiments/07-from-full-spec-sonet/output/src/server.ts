@@ -176,7 +176,7 @@ nextApp.prepare().then(() => {
       activities: new Map(),
     };
     sessions.set(id, session);
-    return res.status(201).json({ id, token, url: `http://${hostname}:${port}/session/${id}/join` });
+    return res.status(201).json({ id, facilitatorToken: token, url: `http://${hostname}:${port}/session/${id}/join` });
   });
 
   // GET /api/sessions/:id — get session
@@ -294,6 +294,7 @@ nextApp.prepare().then(() => {
       teamAuto: 'unclassified',
       flagged: false,
       discussionNote: '',
+      relatedTo: [],
       createdAt: new Date(),
       editHistory: [{ who: participant.name, what: 'created', at: new Date() }],
     };
@@ -370,6 +371,7 @@ nextApp.prepare().then(() => {
       discussionNote: '',
       createdAt: new Date(),
       editHistory: [],
+      relatedTo: [],
       mergedFromIds: sources.map(s => s.id),
       mergedFromNames: sources.map(s => s.participantName),
       mergedFromInitials: sources.map(s => s.participantInitials),
@@ -612,6 +614,7 @@ nextApp.prepare().then(() => {
         teamAuto: 'unclassified',
         flagged: false,
         discussionNote: '',
+        relatedTo: [],
         createdAt: new Date(),
         editHistory: [{ who: participant.name, what: 'created', at: new Date() }],
       };
@@ -730,14 +733,14 @@ nextApp.prepare().then(() => {
     // ── Facilitator activity actions ─────────────────────────────────────────
 
     socket.on('activity:classify', (data: {
-      sessionId: string; activityId: string; verdict: string; token: string;
+      sessionId: string; activityId: string; teamAuto: string; token: string;
     }) => {
       const session = sessions.get(data.sessionId);
       if (!session || data.token !== session.facilitatorToken) return;
       const activity = session.activities.get(data.activityId);
       if (!activity) return;
-      activity.teamAuto = data.verdict as Activity['teamAuto'];
-      activity.editHistory.push({ who: session.facilitatorName, what: `tagged → ${data.verdict}`, at: new Date() });
+      activity.teamAuto = data.teamAuto as Activity['teamAuto'];
+      activity.editHistory.push({ who: session.facilitatorName, what: `tagged → ${data.teamAuto}`, at: new Date() });
       io.to(data.sessionId).emit('activity:updated', activity);
     });
 
@@ -770,8 +773,9 @@ nextApp.prepare().then(() => {
     });
 
     socket.on('activity:merge', (data: {
-      sessionId: string; sourceIds: string[]; title?: string;
-      tpo: string; freq: string; energy: string; token: string;
+      sessionId: string; sourceIds: string[]; token: string;
+      merged?: { title?: string; tpo?: string; freq?: string; energy?: string };
+      title?: string; tpo?: string; freq?: string; energy?: string;
     }) => {
       const session = sessions.get(data.sessionId);
       if (!session || data.token !== session.facilitatorToken) return;
@@ -779,6 +783,12 @@ nextApp.prepare().then(() => {
         .map(sid => session.activities.get(sid))
         .filter(Boolean) as Activity[];
       if (sources.length < 2) return;
+
+      const m = data.merged ?? {};
+      const mergeTitle = m.title ?? data.title;
+      const mergeTpo = m.tpo ?? data.tpo;
+      const mergeFreq = m.freq ?? data.freq;
+      const mergeEnergy = m.energy ?? data.energy;
 
       const newId = crypto.randomUUID().slice(0, 8);
       const first = sources[0];
@@ -789,15 +799,16 @@ nextApp.prepare().then(() => {
         participantName: first.participantName,
         participantInitials: first.participantInitials,
         participantColor: first.participantColor,
-        title: data.title ?? first.title,
-        tpo: (data.tpo ?? first.tpo) as TimePerOccurrence,
-        freq: (data.freq ?? first.freq) as Frequency,
-        energy: (data.energy ?? first.energy) as Energy,
+        title: mergeTitle ?? first.title,
+        tpo: (mergeTpo ?? first.tpo) as TimePerOccurrence,
+        freq: (mergeFreq ?? first.freq) as Frequency,
+        energy: (mergeEnergy ?? first.energy) as Energy,
         teamAuto: 'unclassified',
         flagged: false,
         discussionNote: '',
         createdAt: new Date(),
         editHistory: [],
+        relatedTo: [],
         mergedFromIds: sources.map(s => s.id),
         mergedFromNames: sources.map(s => s.participantName),
         mergedFromInitials: sources.map(s => s.participantInitials),
