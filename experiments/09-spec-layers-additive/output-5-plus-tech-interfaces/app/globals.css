@@ -1,0 +1,490 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Work Audit — Design tokens (editorial-audit aesthetic) ─────────────── */
+:root {
+  /* Warm paper palette */
+  --paper:       #f5f1e8;
+  --paper-deep:  #ebe4d2;
+  --cream:       #fbf8f1;
+  --card:        #ffffff;
+  --ink:         #1c1a16;
+  --ink-2:       #3a342c;
+  --muted:       #6b6356;
+  --muted-2:     #8a8170;
+  --border:      #e4dccb;
+  --border-soft: #efe8d8;
+  --rule:        #d8d0bf;
+
+  /* Accents */
+  --rust:     #b14d2f;
+  --rust-bg:  #f5e3da;
+  --sage:     #6b7d5a;
+  --sage-bg:  #e6ead9;
+  --amber:    #c8945f;
+  --amber-bg: #f5e7d3;
+  --slate:    #4a5a6a;
+  --slate-bg: #dde3e8;
+  --flag:     #c4502b;
+
+  /* Typography */
+  --font-display: "Newsreader", "Source Serif Pro", Georgia, serif;
+  --font-body:    "IBM Plex Sans", -apple-system, system-ui, sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* ── Base resets ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  font-family: var(--font-body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* ── Screen wrapper ────────────────────────────────────────────────────────── */
+.wa-screen {
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--cream);
+  font-family: var(--font-body);
+  color: var(--ink);
+}
+
+/* ── Typography utilities ─────────────────────────────────────────────────── */
+.wa-display { font-family: var(--font-display); font-weight: 400; letter-spacing: -0.01em; }
+.wa-mono    { font-family: var(--font-mono); }
+
+.wa-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ── Status dot ─────────────────────────────────────────────────────────────── */
+.wa-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--sage);
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.wa-dot.is-pulsing {
+  animation: wa-pulse 2s ease-in-out infinite;
+}
+@keyframes wa-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* ── Chip ──────────────────────────────────────────────────────────────────── */
+.wa-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  background: var(--paper);
+  color: var(--ink-2);
+  border: 1px solid var(--border-soft);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.wa-chip.is-rust   { background: var(--rust-bg);  color: #6a2810; border-color: #e8c8b8; }
+.wa-chip.is-sage   { background: var(--sage-bg);  color: #3b4a2b; border-color: #c8d2b1; }
+.wa-chip.is-amber  { background: var(--amber-bg); color: #6f4318; border-color: #e8d2a8; }
+.wa-chip.is-slate  { background: var(--slate-bg); color: #2a3a4a; border-color: #b8c5d0; }
+.wa-chip.is-ghost  { background: transparent; border-color: transparent; color: var(--muted); }
+
+/* ── Card ──────────────────────────────────────────────────────────────────── */
+.wa-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+/* ── Button ─────────────────────────────────────────────────────────────────── */
+.wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--cream);
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: opacity 0.1s;
+}
+.wa-btn:hover { opacity: 0.85; }
+.wa-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.wa-btn.is-ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+.wa-btn.is-ghost:hover { background: var(--paper); }
+.wa-btn.is-rust  { background: var(--rust); border-color: var(--rust); color: #fff; }
+
+/* ── Input ───────────────────────────────────────────────────────────────────── */
+.wa-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: #fff;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.1s, box-shadow 0.1s;
+}
+.wa-input:focus {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(28,26,22,0.06);
+}
+
+/* ── Field label ──────────────────────────────────────────────────────────── */
+.wa-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* ── Segmented control ────────────────────────────────────────────────────── */
+.wa-seg {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+}
+.wa-seg > button {
+  background: transparent;
+  border: 0;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  color: var(--ink-2);
+  cursor: pointer;
+  border-right: 1px solid var(--border-soft);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.wa-seg > button:last-child { border-right: 0; }
+.wa-seg > button.is-on {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+/* ── Divider ──────────────────────────────────────────────────────────────── */
+.wa-rule {
+  height: 1px;
+  background: var(--rule);
+  border: 0;
+  margin: 0;
+}
+
+/* ── Tab bar ──────────────────────────────────────────────────────────────── */
+.wa-tabs {
+  display: inline-flex;
+  gap: 0;
+  background: var(--paper);
+  border-radius: 4px;
+  padding: 3px;
+  border: 1px solid var(--border-soft);
+}
+.wa-tabs > button {
+  background: transparent;
+  border: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: var(--font-body);
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 3px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.wa-tabs > button.is-on {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+/* ── Topbar ───────────────────────────────────────────────────────────────── */
+.wa-topbar {
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--cream);
+  gap: 16px;
+  flex-shrink: 0;
+}
+.wa-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  color: var(--ink);
+}
+.wa-brandmark {
+  width: 22px; height: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--ink);
+  color: var(--cream);
+  flex-shrink: 0;
+}
+
+/* ── Avatar ──────────────────────────────────────────────────────────────── */
+.wa-avatar {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--paper-deep);
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  flex-shrink: 0;
+}
+.wa-avatar.is-sm { width: 20px; height: 20px; font-size: 9px; }
+.wa-avatar.is-lg { width: 32px; height: 32px; font-size: 12px; }
+
+/* ── Activity card ────────────────────────────────────────────────────────── */
+.wa-activity {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.wa-activity:hover {
+  border-color: var(--rule);
+}
+.wa-activity-title {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 500;
+  line-height: 1.3;
+  margin: 0 0 8px 0;
+}
+.wa-activity .wa-chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.wa-flagged {
+  box-shadow: inset 3px 0 0 var(--flag);
+}
+
+/* ── Inline title editing ────────────────────────────────────────────────── */
+.wa-title-input {
+  flex: 1;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--cream);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 3px 8px;
+  margin: -4px 0;
+  line-height: 1.3;
+  outline: none;
+}
+.wa-title-input:focus {
+  border-color: var(--ink);
+  background: #fff;
+}
+
+/* ── Hover-revealed card actions ─────────────────────────────────────────── */
+.wa-pencil-trigger,
+.wa-card-action {
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.12s, background 0.12s;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.wa-pencil-trigger { font-size: 12px; }
+.wa-card-action   { font-size: 14px; }
+.wa-activity:hover .wa-pencil-trigger,
+.wa-activity:hover .wa-card-action,
+.wa-pencil-trigger:focus-visible,
+.wa-card-action:focus-visible {
+  opacity: 1;
+}
+.wa-pencil-trigger:hover { color: var(--ink); background: var(--paper-deep); }
+.wa-card-action:hover    { color: var(--rust); background: var(--rust-bg); }
+
+/* ── QStrip segment ──────────────────────────────────────────────────────── */
+.wa-qseg.is-tappable {
+  appearance: none;
+  -webkit-appearance: none;
+}
+.wa-qseg.is-tappable:not(.is-on):hover {
+  background: var(--paper-deep) !important;
+  color: var(--ink) !important;
+}
+.wa-qseg.is-tappable:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Quick-edit hint ─────────────────────────────────────────────────────── */
+.wa-quick-hint {
+  font-size: 11px;
+  color: var(--muted-2);
+  font-style: italic;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Undo toast ──────────────────────────────────────────────────────────── */
+.wa-undo-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--cream);
+  padding: 12px 18px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  font-size: 13px;
+  z-index: 200;
+  animation: wa-toast-in 0.18s ease-out;
+}
+.wa-undo-toast .wa-undo-msg { display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
+.wa-undo-toast .wa-undo-bar { width: 220px; height: 2px; background: rgba(255,255,255,0.18); border-radius: 1px; overflow: hidden; }
+.wa-undo-toast .wa-undo-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--cream);
+  animation: wa-undo-drain 5s linear forwards;
+  transform-origin: left center;
+}
+.wa-undo-toast button {
+  background: transparent;
+  border: 0;
+  color: var(--cream);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 3px;
+}
+.wa-undo-toast button:hover {
+  background: rgba(255,255,255,0.10);
+}
+@keyframes wa-toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes wa-undo-drain {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* ── Quadrant label ─────────────────────────────────────────────────────── */
+.wa-quad-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  position: absolute;
+}
+
+/* ── Tick label ──────────────────────────────────────────────────────────── */
+.wa-tick {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ── Num label (for lists) ────────────────────────────────────────────────── */
+.wa-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted-2);
+  font-feature-settings: "tnum";
+}
+
+/* ── Scrollable panels ────────────────────────────────────────────────────── */
+.wa-scroll { overflow-y: auto; }
+
+/* ── Full-page layout shell ───────────────────────────────────────────────── */
+.wa-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+/* ── Matrix dot ───────────────────────────────────────────────────────────── */
+.wa-dot-activity {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: box-shadow 0.1s;
+}
+.wa-dot-activity:hover {
+  box-shadow: 0 0 0 4px rgba(28,26,22,0.1), 0 4px 12px rgba(0,0,0,0.14) !important;
+}
