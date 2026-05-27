@@ -1,7 +1,7 @@
 # Blog Post Outline
 
 **Title:** "Your Spec Needs Two Things. The Rest Your Codebase Already Knows."
-**Subtitle:** "Nine experiments in spec-driven development — what we learned about what to write, what to skip, and the one phrasing mistake that broke every implementation."
+**Subtitle:** "Nine experiments in spec-driven development — what we learned about what to write, what to skip, and why your codebase is already doing most of the work."
 **Target:** Medium / dev.to
 **Audience:** Senior engineers and engineering leads already using AI coding tools who want to write better specs
 
@@ -85,7 +85,7 @@ Categories removed per run:
 | Data layer | 0 (field names invented, behavior correct) |
 | Technical interfaces | 0 (inferred from codebase patterns) |
 
-**The finding:** Business rules are categorically different from everything else. Removing them produced four unique functional bugs — the similarity formula was invented, visibility filtering was wrong, the merged result appeared incorrectly on the engineer board. Removing any other category produced at most one shared bug (a phrasing problem discussed in section 6).
+**The finding:** Business rules are categorically different from everything else. Removing them produced four unique functional bugs — the similarity formula was invented, visibility filtering was wrong, the merged result appeared incorrectly on the engineer board. Removing any other category produced zero unique functional bugs — only visual divergence or naming drift.
 
 **Why:** The codebase carries a lot of implicit specification — naming conventions, socket event patterns, component structure, TypeScript idioms, design tokens. The LLM reads the codebase and conforms. But no amount of codebase reading tells it that title similarity should weight at 85%, or that merged sources should hide from facilitator views but not engineer boards. Those have specific correct answers that only exist in the spec.
 
@@ -125,29 +125,7 @@ This is the direct counter to the "spec as source of truth" framing. The codebas
 
 ---
 
-### 6. The Phrasing Problem — One Bug Across All 10 Implementations (~300 words)
-
-Every single implementation — all 5 runs in experiment 08, all 5 runs in experiment 09 — had the same bug. The export view showed merged activities but didn't label or highlight them as merged. The function `buildMarkdownExport()` was untouched in every case.
-
-The spec said: *"The REST export does NOT filter merged sources."*
-
-That's a fact. A true fact. And completely invisible to every agent.
-
-Here's why: agents implement *new* things. They add socket handlers, create components, write server routes. They don't scan existing functions to check whether they contradict a stated fact about system behavior.
-
-The fix is one sentence: *"Modify `buildMarkdownExport()` to include activities where `isMergedSource: true` in their classified sections."*
-
-The difference: passive fact vs. active instruction. The spec stated what the system *is*; it needed to state what to *do*.
-
-Adding more spec detail — up to and including the full spec in 9.5 — did not fix this. The bug is immune to spec completeness. It's a spec *phrasing* problem.
-
-**The practical rule:** Before finalizing any spec, scan for sentences that state facts about existing behavior. Every one of them is a passive rule. Convert them: name the file, name the function, write the instruction.
-
-This is the most counterintuitive finding in the research. The thing that would have fixed the bug wasn't more detail — it was one word changed from "is" to "modify."
-
----
-
-### 7. The Practical Framework (~350 words)
+### 6. The Practical Framework (~350 words)
 
 Pull it together as a decision tool.
 
@@ -168,11 +146,9 @@ Phase 1 — Bootstrap: Use a design tool (Claude Design, v0, Bolt) to generate a
 
 Phase 2 — Iterate on features: Write business rules + UI guidance for each new feature. Let the codebase carry the technical patterns. Accept that one iteration pass may be needed and plan for it rather than trying to eliminate it through spec completeness.
 
-**The one spec-writing habit that prevents the most bugs:** Scan your spec for passive rules — sentences that state facts about existing behavior ("X does not filter Y," "Z remains unchanged"). Convert every one to an active instruction naming the file and function. This is the fix for the phrasing problem that defeated every implementation in this research.
-
 ---
 
-### 8. Rules of Thumb (~250 words)
+### 7. Rules of Thumb (~250 words)
 
 A numbered list of portable, quotable rules — the kind readers screenshot and save. These are the condensed version of everything the experiments produced. Each should be one sentence of rule + one sentence of why.
 
@@ -182,17 +158,15 @@ A numbered list of portable, quotable rules — the kind readers screenshot and 
 
 3. **Business rules + UI guidance = the minimum viable spec.** Below that, implementations diverge functionally. Above that, you're buying precision for external consumers, not functional correctness.
 
-4. **Passive spec rules are invisible to the LLM.** "X does not filter Y" is a fact, not an instruction. The agent will never touch the function that contradicts it. Write instructions: "Modify [file] to do [action]."
+4. **More spec can narrow the solution space in bad ways.** Specify outcomes; leave the mechanism open unless the mechanism is the requirement. Constraining field names also constrains what can be displayed.
 
-5. **More spec can narrow the solution space in bad ways.** Without field name constraints, agents sometimes invent richer solutions. Spec what you care about; leave what you don't care about genuinely open.
+5. **A richer spec reduces variance — it does not eliminate it.** Even at 83K tokens, outputs deviated. Plan for one iteration pass. The spec's job is to make that pass fast, not to prevent it.
 
-6. **A richer spec reduces variance — it does not eliminate it.** Even at 83K tokens, outputs deviated. Plan for one iteration pass. The spec's job is to make that pass fast, not to prevent it.
-
-7. **Iteration is not failure.** You will not know what you want until you see it. The spec's job is to make the first version close enough that discoveries become refinements, not rebuilds.
+6. **Plan for one iteration pass — it will happen regardless of spec quality.** Even the 83K-token spec produced deviation. The spec's job is to make that pass fast by getting the important things right first, not to eliminate the pass entirely.
 
 ---
 
-### 9. Closing (~200 words)
+### 8. Closing (~200 words)
 
 Return to the opening tension: everyone says write a detailed spec. The evidence says write a *precise* spec — precise about the right things.
 
@@ -207,7 +181,7 @@ You will always need to see the running application to discover what you didn't 
 ## Tone Notes
 
 - Confident, not academic. We ran the experiments. We know what we found.
-- Show the failures as data. The export bug, the 9.5 LiveCard gap, the greenfield variance — these aren't embarrassments, they're the findings.
+- Show the failures as data. The 9.5 LiveCard gap, the greenfield variance, the 83K-token spec that still produced deviation — these aren't embarrassments, they're the findings.
 - Direct counter to "spec as source of truth" maximalism — position this explicitly, respectfully, with evidence.
 - No hedging on the practical framework. Give the table. Let readers push back.
 

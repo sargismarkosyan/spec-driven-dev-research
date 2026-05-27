@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Spec Needs Two Things</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #fff;
+      color: rgba(41, 41, 41, 1);
+      font-family: Charter, Georgia, Cambria, "Times New Roman", Times, serif;
+      font-size: 20px;
+      line-height: 1.58;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .article {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 48px 24px 96px;
+    }
+
+    /* Header */
+    .article-header {
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -0.016em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      color: rgba(41, 41, 41, 1);
+    }
+
+    .subtitle {
+      font-size: 22px;
+      color: rgba(117, 117, 117, 1);
+      font-weight: 400;
+      line-height: 1.4;
+      margin-bottom: 32px;
+    }
+
+    .byline {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(230, 230, 230, 1);
+      margin-bottom: 40px;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c84b31, #8b2fc9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: -apple-system, sans-serif;
+      flex-shrink: 0;
+    }
+
+    .byline-text {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+
+    .byline-name {
+      font-weight: 500;
+      color: rgba(41, 41, 41, 1);
+    }
+
+    .byline-meta {
+      color: rgba(117, 117, 117, 1);
+    }
+
+    /* Body text */
+    p {
+      margin-bottom: 1.75em;
+    }
+
+    strong {
+      font-weight: 700;
+    }
+
+    em { font-style: italic; }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.85em;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    /* Headings */
+    h2 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.011em;
+      line-height: 1.25;
+      margin: 2.5em 0 0.75em;
+      color: rgba(41, 41, 41, 1);
+    }
+
+    h3 {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin: 2em 0 0.6em;
+    }
+
+    /* Pull quotes */
+    blockquote {
+      border-left: 3px solid rgba(41, 41, 41, 0.15);
+      margin: 2em 0;
+      padding: 0 0 0 24px;
+      font-size: 24px;
+      font-style: italic;
+      line-height: 1.48;
+      color: rgba(41, 41, 41, 0.9);
+    }
+
+    blockquote p {
+      margin-bottom: 0;
+    }
+
+    /* Tables */
+    .table-wrap {
+      margin: 2em 0;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: rgba(117, 117, 117, 1);
+      border-bottom: 2px solid rgba(41, 41, 41, 0.12);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(41, 41, 41, 0.08);
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    td.highlight { font-weight: 700; color: #c84b31; }
+
+    tr.total-row td {
+      font-weight: 700;
+      border-top: 2px solid rgba(41, 41, 41, 0.12);
+      padding-top: 14px;
+    }
+
+    /* Image blocks */
+    .image-block {
+      margin: 2.5em -24px;
+    }
+
+    .image-block img {
+      width: 100%;
+      display: block;
+    }
+
+    .image-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 1.5em 0;
+    }
+
+    .image-pair figure {
+      margin: 0;
+    }
+
+    .image-pair img {
+      width: 100%;
+      display: block;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .image-pair--modal img {
+      height: 200px;
+      object-fit: cover;
+      object-position: top center;
+    }
+
+    figcaption {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      color: rgba(117, 117, 117, 1);
+      margin-top: 8px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .image-caption-block {
+      margin: 2.5em 0;
+    }
+
+    .image-caption-block img {
+      width: 100%;
+      display: block;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* Horizontal rule */
+    hr {
+      border: none;
+      border-top: 1px solid rgba(41, 41, 41, 0.15);
+      margin: 3em 0;
+    }
+
+    /* Rules of thumb list */
+    .rules-list {
+      list-style: none;
+      padding: 0;
+      margin: 1.5em 0 2em;
+    }
+
+    .rules-list li {
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(41, 41, 41, 0.08);
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    .rules-list li:last-child { border-bottom: none; }
+
+    .rule-number {
+      font-family: -apple-system, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: #c84b31;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* Footer note */
+    .footer-note {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      color: rgba(117, 117, 117, 1);
+      border-top: 1px solid rgba(41,41,41,0.1);
+      padding-top: 24px;
+      margin-top: 3em;
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    /* Phase callout boxes */
+    .phase-block {
+      background: rgba(41, 41, 41, 0.03);
+      border-left: 3px solid rgba(41, 41, 41, 0.2);
+      padding: 16px 20px;
+      margin: 1.5em 0;
+      font-size: 18px;
+    }
+
+    .phase-block strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: rgba(117,117,117,1);
+      font-family: -apple-system, sans-serif;
+    }
+  </style>
+</head>
+<body>
+<article class="article">
+
+  <!-- Header -->
+  <div class="article-header">
+    <h1>Your Spec Needs Two Things. The Rest Your Codebase Already Knows.</h1>
+    <p class="subtitle">Nine experiments in spec-driven development — what we learned about what to write, what to skip, and why your codebase is already doing most of the work.</p>
+    <div class="byline">
+      <div class="avatar">SM</div>
+      <div class="byline-text">
+        <div class="byline-name">Sargis Markosyan</div>
+        <div class="byline-meta">8 min read · May 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hook -->
+  <p>Everyone is telling you to write a spec.</p>
+
+  <p>Thoughtworks put spec-driven development on their radar. GitHub shipped Spec Kit. AWS shipped Kiro. The consensus is clear: write a detailed spec, treat it as the source of truth, generate code from it.</p>
+
+  <p>What's missing from all of it is experimental evidence. Which parts of a spec actually produce correct implementations? Which parts does the model figure out on its own? What's the minimum you can write and still ship something?</p>
+
+  <p>We had the same question. So we ran the experiments.</p>
+
+  <blockquote><p>Whatever you put in the spec, the LLM follows. Everything else it infers from your codebase. The minimum viable spec is whatever you care about most — business rules are the floor.</p></blockquote>
+
+  <p>Here's how we got there.</p>
+
+  <hr>
+
+  <!-- What we built -->
+  <h2>What We Built</h2>
+
+  <p>The application: a <strong>Toil Tracker</strong> (<em>toil</em>: SRE term for repetitive, manual work that's ripe for automation) — a real-time collaborative retrospective tool where engineers log recurring work and a facilitator identifies automation targets. Multi-user, distinct roles, WebSocket-driven, with a full facilitation workflow.</p>
+
+  <figure>
+    <div class="image-pair">
+      <img src="app-engineer-view.png" alt="Engineer activity board — submission view with recall prompts and live team feed" />
+      <img src="app-facilitator-view.png" alt="Facilitator live stream view with activity cards and emerging themes panel" />
+    </div>
+    <figcaption><strong>Engineer view</strong> (left): categorized recall prompts, activity submission, and teammates' live feed. <strong>Facilitator view</strong> (right): activity cards with effort and energy tags, emerging themes and frequency distribution.</figcaption>
+  </figure>
+
+  <p>We chose it deliberately. Complex enough to have real design decisions. Not a todo app — LLMs have memorized thousands of those. We needed the model to rely on our spec and our codebase, not its training data.</p>
+
+  <p>For the integration experiments, we focused on one feature: <strong>merge</strong>. The facilitator can combine similar activities submitted by different engineers into a single consolidated card.</p>
+
+  <p>This feature had everything needed for a meaningful test:</p>
+
+  <ul style="margin: 0 0 1.75em 1.5em; line-height: 1.7;">
+    <li style="margin-bottom: 0.6em;"><strong>Specific business logic</strong> — a Jaccard similarity formula with exact weights (85% title / 10% frequency / 5% time-per-occurrence), an 8-character UUID for the merged result, a <code>teamAuto</code> field that always resets to <code>unclassified</code></li>
+    <li style="margin-bottom: 0.6em;"><strong>Cross-cutting visibility rules</strong> — merged source cards hidden from facilitator views, preserved in engineer boards and the export</li>
+    <li style="margin-bottom: 0.6em;"><strong>Non-trivial UI</strong> — a two-column modal, similarity badges keyed to score thresholds, avatar stacks showing contributing engineers</li>
+    <li><strong>Five integration points</strong> — the live view, matrix view, grouped view, discussion view, and export all needed to handle merged activities correctly</li>
+  </ul>
+
+  <hr>
+
+  <!-- Research path -->
+  <h2>How We Got to the Right Question</h2>
+
+  <p>The research ran through three phases.</p>
+
+  <div class="phase-block">
+    <strong>Phase 1 — Greenfield (Experiments 01–04)</strong>
+    Same app, four spec formats: a problem statement, PM user stories, a user-role description, a full technical PRD. The outputs diverged heavily. Different data models, different product decisions, different quality across surfaces. None produced something we'd ship in one pass.
+  </div>
+
+  <div class="phase-block">
+    <strong>Phase 2 — Building a Reference (Experiment 05)</strong>
+    We changed approach. Instead of spec-first, we used Claude Design to build a visual prototype — iterating on the UI until the design felt right. From that, we had Claude build an actual working application, then iterated on the working app until we had a version we were satisfied with. Only then did we generate its full spec: <strong>83,000 tokens</strong> across multiple files — every screen, every data model field, every socket event, every rule.
+  </div>
+
+  <div class="phase-block">
+    <strong>Phase 3 — Spec Completeness Test (Experiments 06–07)</strong>
+    We used the 83K-token spec to rebuild the application twice, with two different models. Both produced strong results. Both still deviated in small but observable ways — a missing button, minor layout differences, edge cases handled differently.
+  </div>
+
+  <blockquote><p>You cannot close the gap through spec detail alone. At 83K tokens, variance still persists. The spec is not your only source of truth. The codebase is one too.</p></blockquote>
+
+  <p>That reframed the question. We already had a working application — a codebase that was itself a source of truth for conventions, patterns, and structure. So we shifted the experiment: take the existing app, introduce a single new feature, and ask which parts of the spec actually drive correctness when the codebase is already doing half the work.</p>
+
+  <hr>
+
+  <!-- Ablation -->
+  <h2>The Ablation Study: What Breaks When You Remove It</h2>
+
+  <p>We took the reference application, stripped out the merge feature, and rebuilt it five times — each run with the full spec minus one category.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Category removed</th>
+          <th>Unique functional bugs</th>
+          <th>Also observed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>None (baseline)</td><td>0</td><td>—</td></tr>
+        <tr><td class="highlight"><strong>Business rules</strong></td><td class="highlight"><strong>4</strong></td><td class="highlight">—</td></tr>
+        <tr><td>UI guidance</td><td>0</td><td>Visual inconsistency, layout drift</td></tr>
+        <tr><td>Data layer</td><td>0</td><td>Field name drift</td></tr>
+        <tr><td>Technical interfaces</td><td>0</td><td>Socket &amp; API name drift</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Business rules are categorically different from everything else.</p>
+
+  <p>Removing them produced four unique functional bugs:</p>
+
+  <ol style="margin: 0 0 1.75em 1.5em; line-height: 1.7;">
+    <li style="margin-bottom: 0.5em;">The similarity formula was invented — different algorithm, different weights</li>
+    <li style="margin-bottom: 0.5em;">Merged source cards appeared in facilitator views where they should be hidden</li>
+    <li style="margin-bottom: 0.5em;">The merged result ID was formatted differently</li>
+    <li>Cross-view filtering was inconsistent across the live, matrix, and grouped views</li>
+  </ol>
+
+  <p>Removing any other category? <strong>Zero unique functional bugs.</strong> Only visual divergence or naming drift.</p>
+
+  <p>The codebase carries enormous implicit specification. Naming conventions, socket event patterns, component structure, TypeScript idioms, design tokens — the LLM reads the existing code and conforms to all of it. When you remove the data layer spec, it invents field names that follow your conventions. When you remove the technical interfaces spec, it invents socket event names that match your patterns. The behavior is correct. The names drift slightly.</p>
+
+  <p>But no amount of codebase reading tells the model that title similarity should be weighted at 85%, or that merged sources should be hidden from facilitator views but preserved on engineer boards.</p>
+
+  <blockquote><p>The codebase is <em>also</em> a source of truth — for a different class of information. The spec's job is to cover only what the codebase can't.</p></blockquote>
+
+  <p>That said, there's no restriction on specifying technical patterns. If a naming convention, an architectural constraint, or a specific implementation approach matters to you — include it. The spec will follow whatever you write. The point is that leaving those details out is <em>low-risk</em>, not catastrophic: the model will read the codebase, infer the conventions, and produce something functionally correct. The deviation, if any, lands in names and structure rather than behavior.</p>
+
+  <hr>
+
+  <!-- Additive -->
+  <h2>The Additive Study: Where Quality Crosses the Threshold</h2>
+
+  <p>We flipped the experiment. Start with almost nothing; add one spec layer at a time.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Run</th>
+          <th>Spec provided</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>9.1</td><td>2-sentence problem statement</td><td>Working but incomplete</td></tr>
+        <tr><td><strong>9.2</strong></td><td><strong>+ business rules</strong></td><td><strong>Functionally correct ✓</strong></td></tr>
+        <tr><td>9.3</td><td>+ UI guidance</td><td>Visually consistent</td></tr>
+        <tr><td>9.4</td><td>+ data layer</td><td>Exact field names</td></tr>
+        <tr><td>9.5</td><td>+ technical interfaces</td><td>Exact socket/REST names</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>9.1 — Problem statement only.</strong> A working merge feature — respecting the design system, using existing components, following socket patterns. But the modal let you edit only the title of the consolidated card. Time, frequency, and energy fields were missing. The agent didn't think of them without being asked.</p>
+
+  <p><strong>9.2 — Plus business rules</strong> <em>(the largest jump).</em> The full card editor arrived: time estimate, frequency, and energy fields were now adjustable — not just the title. The business rules told the model these fields were part of the card's definition and needed to be editable. Also correct: the Jaccard similarity formula, view filtering, and <code>teamAuto</code> reset. Cross-view behavior correct across all views. The feature was ship-worthy. Business rules alone crossed the functional correctness threshold.</p>
+
+  <p><strong>9.3 — Plus UI guidance.</strong> Visual consistency locked in — exact modal text, badge colors, two-column layout, button order. Outputs 9.3 through 9.5 were nearly indistinguishable in user testing.</p>
+
+  <p><strong>9.4 and 9.5 — Precision only.</strong> Exact field names. Exact socket event names. Neither changed the visible quality of the feature — only its interoperability with external systems.</p>
+
+  <!-- Screenshot comparison -->
+  <figure>
+    <div class="image-pair image-pair--modal">
+      <img src="modal-9-1-no-spec.png" alt="9.1 merge modal — no spec" />
+      <img src="modal-9-3-min-viable-spec.png" alt="9.3 merge modal — minimum viable spec" />
+    </div>
+    <figcaption><strong>9.1 — Problem statement only</strong> (left): no similarity scores, title-only editor, activities are absorbed. <strong>9.3 — Business rules + UI guidance</strong> (right): similarity badges, full field editor, originals preserved.</figcaption>
+  </figure>
+
+  <h3>The inversion</h3>
+
+  <p>Here's what we didn't expect.</p>
+
+  <p>Output 9.2 — business rules only, no data model spec — produced the <strong>richest</strong> source card display. It showed full card details for each merged source: title, time estimate, frequency, energy, submitting engineer.</p>
+
+  <p>Outputs 9.3 and 9.4, constrained by the explicit field names in the data model spec (<code>mergedFromNames</code>, <code>mergedFromInitials</code>, <code>mergedFromColors</code>), showed only what those fields carried — names and avatars. Nothing more.</p>
+
+  <blockquote><p>More specification produced a narrower solution. Less gives the model room to experiment.</p></blockquote>
+
+  <p>Spec should describe outcomes, not implementation details — unless the implementation detail is itself the requirement.</p>
+
+  <p>The practical implication: a looser spec gives the model room to explore. The first version you get will be richer — and may propose solutions you hadn't considered — though you'll likely need to iterate toward your exact vision. A tighter spec produces a more predictable first pass, closer to what you had in mind, but with less room for the model to surprise you. The calibration worth learning: be specific on the things that must be exactly right. On the things you're uncertain about, describe the outcome you want rather than the implementation. The model will fill the space — and sometimes it fills it better than you would have prescribed.</p>
+
+  <hr>
+
+  <!-- Framework -->
+  <h2>The Practical Framework</h2>
+
+  <p>One question to ask about every element before you write it into the spec:</p>
+
+  <blockquote><p><em>Does this have a specific correct answer that isn't already in my codebase?</em></p></blockquote>
+
+  <p>If yes, write it. If no, the LLM will infer it.</p>
+
+  <h3>When to specify what</h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Spec layer</th>
+          <th>Write it when…</th>
+          <th>Skip it when…</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Business rules</strong></td>
+          <td>It has a formula, threshold, or visibility rule</td>
+          <td>Invest here as much as possible — there is no skip</td>
+        </tr>
+        <tr>
+          <td><strong>UI guidance</strong></td>
+          <td>Visual consistency matters across iterations</td>
+          <td>You're on v1 and plan to iterate on the design</td>
+        </tr>
+        <tr>
+          <td><strong>Data layer</strong></td>
+          <td>Other systems consume your data</td>
+          <td>It's internal and field names aren't a contract</td>
+        </tr>
+        <tr>
+          <td><strong>Technical interfaces</strong></td>
+          <td>External systems depend on your API contracts</td>
+          <td>It's an internal implementation detail</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The two-phase workflow</h3>
+
+  <div class="phase-block">
+    <strong>Phase 1 — Bootstrap</strong>
+    Use a design tool to generate a baseline application. Iterate visually until it's right. This produces a codebase <em>and</em> an implicit design language — the model's own choices become the convention every future iteration conforms to.
+  </div>
+
+  <div class="phase-block">
+    <strong>Phase 2 — Iterate on features</strong>
+    Write business rules + UI guidance. Let the codebase carry the technical patterns. Plan for one iteration pass rather than trying to eliminate it through spec completeness.
+  </div>
+
+  <hr>
+
+  <!-- Rules of thumb -->
+  <h2>Rules of Thumb</h2>
+
+  <ol class="rules-list">
+    <li>
+      <span class="rule-number">Rule 1</span>
+      <strong>Write business rules. Always.</strong><br>
+      If a spec element has a formula, threshold, weight, or visibility rule — write it. The LLM cannot infer specific correct values from codebase patterns.
+    </li>
+    <li>
+      <span class="rule-number">Rule 2</span>
+      <strong>Your codebase is already a spec.</strong><br>
+      The LLM reads your code and conforms to it. Spec only needs to cover what isn't already there. The richer the codebase, the less you need to write per feature.
+    </li>
+    <li>
+      <span class="rule-number">Rule 3</span>
+      <strong>Specify what you care about — business rules are the floor.</strong><br>
+      Add UI guidance when visual consistency matters. Add precision specs when external systems need to interoperate. The LLM handles everything else.
+    </li>
+    <li>
+      <span class="rule-number">Rule 4</span>
+      <strong>Specify outcomes — leave mechanisms open unless they're the requirement.</strong><br>
+      The issue isn't how much you spec; it's what you spec. Outcomes give the model freedom to find the best implementation. Mechanisms — field names, data structures, implementation details — constrain what it can propose. Constraining field names also constrains what can be displayed.
+    </li>
+    <li>
+      <span class="rule-number">Rule 5</span>
+      <strong>You can iterate before, after, or both — know the trade-off.</strong><br>
+      Heavy upfront iteration on the design and spec produces a stronger first implementation and pays off when you know what you want. A looser spec leaves the model room to explore, with iteration happening on the output instead. Both are valid. Most projects use some of each. As a rough guide: early on, when the problem is complex and the first pass sets the direction, invest more in the spec. Later, when you're iterating on an established codebase, a looser spec with more post-implementation adjustment becomes more practical.
+    </li>
+  </ol>
+
+  <hr>
+
+  <!-- Closing -->
+  <h2>Closing</h2>
+
+  <p>Everyone says write a detailed spec.</p>
+
+  <p>The evidence says write a <em>precise</em> spec — precise about the right things.</p>
+
+  <p>The "spec as source of truth" framing isn't wrong, it's incomplete. The spec is the source of truth for business logic and UI decisions. The codebase is the source of truth for technical patterns. Both are authoritative. They cover different things.</p>
+
+  <p>The most durable insight from nine experiments: spec-driven development is an iterative practice, not a one-shot generator. The value of a good spec isn't eliminating iteration — it's ensuring the important things are right in the first pass, so the iterations you do are on the right problems.</p>
+
+  <p class="footer-note">The experiments were run on a Next.js + Express + Socket.io application. The merge feature was implemented across ten parallel runs — five ablative, five additive — using Claude Sonnet 4.5. All implementations were evaluated against eight criteria covering business logic correctness, data model fidelity, UI accuracy, and cross-view behavior. The source code and experiment outputs are available at <a href="https://github.com/sargismarkosyan/spec-driven-dev-research" target="_blank">github.com/sargismarkosyan/spec-driven-dev-research</a>.</p>
+
+</article>
+</body>
+</html>
